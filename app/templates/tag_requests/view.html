@@ -1,0 +1,475 @@
+{% extends 'layouts/default.html' %}
+
+{% block title %}
+[{{ request['new_tag_ticket'] or request['new_rule_ticket'] }}] Request Details
+{% endblock %}
+
+{% block content %}
+
+
+                <a href="{{ captureUrl }}" class="apple-btn-primary text-decoration-none d-flex align-items-center gap-2 py-2 px-3">
+                    <i class="bi bi-play-fill fs-5"></i> Capture Tags
+                </a>
+            </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column: Request & Requester Details -->
+        <div class="col-lg-4">
+            <div class="apple-card mb-4">
+                <h5 class="mb-4 text-primary d-flex align-items-center gap-2 fw-bold">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <span>Specifications</span>
+                </h5>
+
+                <div class="mb-3">
+                    <label class="form-label-xs fw-semibold text-secondary mb-1 d-block">Property</label>
+                    <div class="d-flex align-items-center ms-1 gap-2">
+                        <select class="badge status-select-badge bg-secondary" style="margin: 0; max-width: 250px;" onchange="updateTagRequestField({{ esc(request['id']) }}, 'property_id', this.value)">
+                            {% for propId, prop in properties.items() %}
+                                <option value="{{ esc(propId) }}" {{ ('selected' if propId == request['property_id'] else '') }} class="bg-white text-dark text-start">
+                                    {{ esc(prop['name']) }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <a href="{{ esc(properties[request['property_id']]['ref_link'] or '#') }}" target="_blank" class="apple-link-dark text-decoration-none" id="property-link" title="Open Property URL">
+                            <i class="bi bi-globe2 text-muted"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-xs fw-semibold text-secondary mb-1 d-block">Vendor</label>
+                    <span class="fw-medium text-dark ms-1" style="font-size: 0.9rem;">
+                        {{ esc(vendors[request['vendor_id']] or '—') }}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-xs fw-semibold text-secondary mb-1 d-block">Type</label>
+                    <div class="d-flex align-items-center gap-2 ms-1">
+                        <select class="badge status-select-badge bg-secondary" style="margin: 0; max-width: 250px;" onchange="updateTagRequestField({{ esc(request['id']) }}, 'type', this.value)">
+                            <option value="{{ esc(Constants.JIRA_TYPE_NEW_TAG) }}" {{ ('selected' if request['type'] == Constants.JIRA_TYPE_NEW_TAG else '') }} class="bg-white text-dark text-start">New Tag</option>
+                            <option value="{{ esc(Constants.JIRA_TYPE_NEW_RULE) }}" {{ ('selected' if request['type'] == Constants.JIRA_TYPE_NEW_RULE else '') }} class="bg-white text-dark text-start">New Rule</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-xs fw-semibold text-secondary mb-1 d-block">Status</label>
+                    <div class="d-flex align-items-center gap-2 ms-1">
+                        <select class="badge status-select-badge {{ status_request_class(request['status']) }}" style="margin: 0; max-width: 250px;" onchange="updateTagRequestField({{ esc(request['id']) }}, 'status', this.value)">
+                            {% for statusValue, statusLabel in Constants.STATUS_REQUESTS.items() %}
+                                <option value="{{ esc(statusValue) }}" {{ ('selected' if statusValue == request['status'] else '') }} class="bg-white text-dark text-start">
+                                    {{ esc(statusLabel) }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        {% if request['status'] == Constants.STATUS_REQUEST_NEW_RULE_REQUEST_SUBMITTED or
+                                (request['status'] == Constants.STATUS_REQUEST_HQ_REVIEW and request['type'] == Constants.JIRA_TYPE_NEW_RULE) %}
+                            <a href="{{ site_url('tag-requests/request-approved/' ~ request['id']) }}"
+                               class="badge bg-success text-decoration-none"
+                               onclick="return confirm('Confirm that the tags are published live? (This will set tags to ENABLED status)');">
+                                <i class="bi bi-check-circle-fill me-1"></i>Publish
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- JIRA Ticket Actions / Links -->
+                <h6 class="fw-bold mt-4 mb-3 text-secondary border-top pt-3">JIRA Integration</h6>
+
+                {% if request['type'] == Constants.JIRA_TYPE_NEW_TAG %}
+                    <div class="mb-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1 d-block">New Tag Request</label>
+                        {% if not hasNewTag %}
+                            <form action="{{ site_url('tag-requests/add-new-tag') }}" method="post">
+                                <div class="d-flex gap-2">
+                                    <input type="hidden" name="request_id" value="{{ esc(request['id'] or '') }}">
+                                    <input type="text" name="new_tag_ticket" id="new_tag_ticket"
+                                           class="form-control form-control-xs"
+                                           value="{{ old('new_tag_ticket', old['new_tag_ticket'] or '') }}"
+                                           placeholder="GTA-XXXXX"
+                                           required>
+                                    <button type="submit"
+                                            class="apple-btn-primary btn-sm px-3 text-nowrap"
+                                            onclick="return confirm('Confirm add New Tag ticket ID?');">
+                                        Add
+                                    </button>
+                                </div>
+                            </form>
+                        {% else %}
+                            <div class="d-flex align-items-center gap-2 ms-1">
+                                <a href="{{ Constants.JIRA_LINK ~ request['new_tag_ticket'] }}" target="_blank" class="apple-link text-decoration-none fw-semibold">
+                                    {{ esc(request['new_tag_ticket']) }}
+                                </a>
+                                <a href="{{ site_url('tag-requests/new-tag-request/' ~ request['id']) }}" class="apple-btn-secondary btn-sm px-2 py-1 text-decoration-none" style="font-size: 0.75rem; border-radius: 9999px;">
+                                    View Tag Request
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="form-label-xs fw-semibold text-secondary mb-1 d-block">New Rule Request</label>
+                    {% if not hasNewRule %}
+                        <form action="{{ site_url('tag-requests/add-new-rule') }}" method="post">
+                            <div class="d-flex gap-2">
+                                <input type="hidden" name="request_id" value="{{ esc(request['id'] or '') }}">
+                                <input type="text" name="new_rule_ticket" id="new_rule_ticket"
+                                       class="form-control form-control-xs"
+                                       value="{{ old('new_rule_ticket', old['new_rule_ticket'] or '') }}"
+                                       placeholder="GTA-XXXXX"
+                                       required>
+                                <button type="submit"
+                                        class="apple-btn-primary btn-sm px-3 text-nowrap"
+                                        onclick="return confirm('Confirm add New Rule ticket ID?');">
+                                    Add
+                                </button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="d-flex align-items-center gap-2 ms-1">
+                            <a href="{{ Constants.JIRA_LINK ~ request['new_rule_ticket'] }}" target="_blank" class="apple-link text-decoration-none fw-semibold">
+                                {{ esc(request['new_rule_ticket']) }}
+                            </a>
+                            <a href="{{ site_url('tag-requests/new-rule-request/' ~ request['id']) }}" class="apple-btn-secondary btn-sm px-2 py-1 text-decoration-none" style="font-size: 0.75rem; border-radius: 9999px;">
+                                View Rule Request
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Requester Details -->
+                <h6 class="fw-bold mt-4 mb-3 text-secondary border-top pt-3">Requester Details</h6>
+
+                <div class="mb-3">
+                    <label class="form-label-xs fw-semibold text-secondary mb-1 d-block">Name</label>
+                    <span class="fw-medium text-dark ms-1" style="font-size: 0.9rem;">
+                        {{ esc(request['requester_name'] or '—') }}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-xs fw-semibold text-secondary mb-1 d-block">Email Address</label>
+                    <span class="fw-medium text-dark ms-1" style="font-size: 0.9rem;">
+                        {% if not empty(request['requester_email']) %}
+                            <a href="mailto:{{ esc(request['requester_email']) }}" class="apple-link text-decoration-none">
+                                {{ esc(request['requester_email']) }}
+                            </a>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-xs fw-semibold text-secondary mb-1 d-block">Organization</label>
+                    <span class="fw-medium text-dark ms-1" style="font-size: 0.9rem;">
+                        {{ esc(organizations[request['requester_organization']] or '—') }}
+                    </span>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 mt-4 pt-3 border-top">
+                    <a href="{{ site_url('tag-requests') }}" class="apple-btn-secondary btn-sm px-3 text-decoration-none w-100">Back to List</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Associated Tags & Uploaded Files -->
+        <div class="col-lg-8">
+            <!-- Tags Section -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0 text-primary d-flex align-items-center gap-2 fw-bold">
+                        <i class="bi bi-tags-fill"></i>
+                        <span>Tags Associated</span>
+                        <span class="badge bg-secondary rounded-pill" style="font-size: 0.75rem;">{{ count(tags) }}</span>
+                    </h5>
+                    <button type="button" class="apple-btn-secondary btn-sm d-flex align-items-center gap-1 py-1 px-3" data-bs-toggle="modal" data-bs-target="#createTagModal" style="border-radius: 8px; font-size: 0.8rem;">
+                        <i class="bi bi-plus-circle"></i> Create New Tag
+                    </button>
+                </div>
+
+                {% if not empty(tags) %}
+                    <div class="apple-table-container mb-3">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 apple-table">
+                                <thead>
+                                    <tr>
+                                        <th class="form-label-sm fw-semibold">Tag Name</th>
+                                        <th class="form-label-sm fw-semibold" style="width: 170px;">Status</th>
+                                        <th class="form-label-sm fw-semibold text-end" style="width: 70px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for tag in tags %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <a href="{{ site_url('tags/view/' ~ tag['id']) }}" target="_blank" class="apple-link-dark text-decoration-none fw-semibold">
+                                                        {{ esc(tag['name']) }}
+                                                    </a>
+                                                    <span class="badge bg-secondary text-secondary" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px;">#{{ esc(tag['id']) }}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge {{ status_class(tag['status']) }} text-nowrap" style="font-size: 0.72rem; font-weight: 500;">
+                                                    {{ esc(status_label(tag['status'])) }}
+                                                </span>
+                                            </td>
+                                            <td class="text-end">
+                                                <form action="{{ site_url('tag-requests/remove-tag/' ~ request['id'] ~ '/' ~ tag['id']) }}" method="post" class="d-inline">
+                                                    {{ csrf_field() }}
+                                                    <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Remove tag from request"
+                                                            data-confirm="Are you sure you want to remove tag '{{ esc(addslashes(tag['name'])) }}' from this request?"
+                                                            data-confirm-title="Remove Tag Association"
+                                                            data-confirm-type="danger"
+                                                            data-confirm-text="Remove">
+                                                        <i class="bi bi-trash fs-6"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info py-2 px-3 mb-3" style="font-size: 0.85rem; border-radius: 8px;">
+                        <i class="bi bi-info-circle me-1"></i> No tags are currently associated with this request.
+                    </div>
+                {% endif %}
+
+                <!-- Add Existing Tag Card -->
+                <div class="apple-card mb-4" style="border: 1px dashed var(--color-border-input); background: transparent; box-shadow: none; padding: 16px 20px;">
+                    <form action="{{ site_url('tag-requests/add-tag/' ~ request['id']) }}" method="post">
+                        {{ csrf_field() }}
+                        <div class="row align-items-end g-2">
+                            <div class="col-md-9">
+                                <label for="select-add-tag" class="form-label-xs text-secondary fw-semibold mb-1 d-flex align-items-center gap-1">
+                                    <i class="bi bi-search"></i> Add Existing Tag
+                                </label>
+                                <select name="tag_id" id="select-add-tag" class="form-select form-select-xs searchable-select-tag" required>
+                                    <option value="">Search and select tag to associate...</option>
+                                    {% if not empty(groupedTags) %}
+                                        {% for propName, propTags in groupedTags.items() %}
+                                            <optgroup label="{{ esc(propName) }}">
+                                                {% for pTag in propTags %}
+                                                    <option value="{{ esc(pTag['id']) }}" {{ ('disabled' if isset(tags[pTag['id']]) else '') }}>
+                                                        #{{ esc(pTag['id']) }} - {{ esc(pTag['name']) }} {{ ('(Already Added)' if isset(tags[pTag['id']]) else '') }}
+                                                    </option>
+                                                {% endfor %}
+                                            </optgroup>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="apple-btn-secondary btn-sm w-100 py-1 d-flex align-items-center justify-content-center gap-1" style="height: 38px;">
+                                    <i class="bi bi-plus-lg"></i> Add Tag
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Files Section -->
+            <div class="mb-4">
+                <h5 class="mb-3 text-primary d-flex align-items-center gap-2 fw-bold">
+                    <i class="bi bi-file-earmark-arrow-up-fill"></i>
+                    <span>Attached Files</span>
+                </h5>
+                
+                {% if not empty(files) %}
+                    <div class="apple-table-container mb-4">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 apple-table">
+                                <thead>
+                                    <tr>
+                                        <th class="form-label-sm fw-semibold" style="width: 180px;">Type</th>
+                                        <th class="form-label-sm fw-semibold">File Name</th>
+                                        <th class="form-label-sm fw-semibold" style="width: 180px;">Uploaded At</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for file in files %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-secondary text-nowrap">
+                                                    {{ esc(Constants.ATTACHMENTS[file['type']] or 'Attachment') }}
+                                                </span>
+                                            </td>
+                                            <td class="fw-medium">
+                                                <a href="{{ site_url('download?file=' ~ rawurlencode(file['file_path'])) }}" download="{{ esc(file['file_name']) }}" rel="noopener" class="apple-link-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Download File">
+                                                    <i class="bi bi-download text-primary fs-6"></i>
+                                                    {{ esc(file['file_name']) }}
+                                                </a>
+                                            </td>
+                                            <td class="text-secondary small">
+                                                {{ esc(file['created_at']) }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info py-2 px-3 mb-4" style="font-size: 0.85rem;">
+                        <i class="bi bi-info-circle me-1"></i> No files uploaded for this request yet.
+                    </div>
+                {% endif %}
+
+                <!-- File Upload Card -->
+                <div class="apple-card" style="border: 1px dashed var(--color-border-input); background: transparent; box-shadow: none; padding: 20px;">
+                    <h6 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2">
+                        <i class="bi bi-upload"></i>
+                        <span>Upload New File</span>
+                    </h6>
+                    <form action="{{ site_url('tag-requests/upload') }}" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="request_id" value="{{ esc(request['id']) }}">
+                        <input type="hidden" name="property_id" value="{{ esc(request['property_id']) }}">
+                        <input type="hidden" name="vendor_name" value="{{ esc(vendors[request['vendor_id']]) }}">
+                        
+                        <div class="row align-items-end g-3">
+                            <div class="col-md-5">
+                                <label for="type" class="form-label-xs text-secondary fw-semibold mb-1">File Type</label>
+                                <select name="type" class="form-select form-select-xs" required>
+                                    {% for value, label in Constants.ATTACHMENTS.items() %}
+                                        <option value="{{ esc(value) }}"
+                                                {{ ('selected' if old('type', old['type'] or 1) == value else '') }}>
+                                            {{ esc(label) }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-5">
+                                <label for="file_path" class="form-label-xs text-secondary fw-semibold mb-1">Select File</label>
+                                <input type="file" name="file_path" class="form-control form-control-xs" required>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <button type="submit" class="apple-btn-primary btn-sm w-100 py-1" onclick="return confirm('Confirm uploading of this file?');">
+                                    Upload
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Create & Associate New Tag -->
+<div class="modal fade" id="createTagModal" tabindex="-1" aria-labelledby="createTagModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: 1px solid var(--color-border-subtle); overflow: hidden;">
+            <div class="modal-header px-4 pt-4 pb-3 border-bottom">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="createTagModalLabel">
+                    <i class="bi bi-plus-circle-fill text-primary"></i> Create &amp; Associate New Tag
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ site_url('tag-requests/create-tag/' ~ request['id']) }}" method="post">
+                {{ csrf_field() }}
+                <div class="modal-body px-4 py-3">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label-xs fw-semibold text-secondary mb-1">Tag Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control form-control-xs" placeholder="e.g. LC-AEM-AD(Vendor)-CM-ALL-WL-SDSME_..." required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-xs fw-semibold text-secondary mb-1">Property</label>
+                            <select name="property_id" class="form-select form-select-xs" required>
+                                {% if not empty(allProperties) %}
+                                    {% for prop in allProperties %}
+                                        <option value="{{ esc(prop['id']) }}" {{ ('selected' if prop['id'] == request['property_id'] else '') }}>
+                                            {{ esc(prop['name']) }}
+                                        </option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-xs fw-semibold text-secondary mb-1">Vendor</label>
+                            <select name="vendor_id" class="form-select form-select-xs" required>
+                                {% if not empty(allVendors) %}
+                                    {% for vId, vName in allVendors.items() %}
+                                        <option value="{{ esc(vId) }}" {{ ('selected' if vId == request['vendor_id'] else '') }}>
+                                            {{ esc(vName) }}
+                                        </option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-xs fw-semibold text-secondary mb-1">AL End Date</label>
+                            <input type="date" name="al_end_date" class="form-control form-control-xs" value="{{ esc(date('Y-m-d', strtotime('+61 days'))) }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-xs fw-semibold text-secondary mb-1">Conditions / Trigger</label>
+                            <input type="text" name="conditions" class="form-control form-control-xs" placeholder="e.g. All Pages, Order Confirmation">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label-xs fw-semibold text-secondary mb-1">JS Code / Tag Script (Optional)</label>
+                            <textarea name="js_code" class="form-control form-control-xs font-monospace" rows="4" placeholder="Paste custom JS or tag snippet here..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer px-4 py-3 border-top bg-light">
+                    <button type="button" class="apple-btn-secondary btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="apple-btn-primary btn-sm px-4">Create &amp; Link Tag</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    if ($.fn.select2) {
+        $('.searchable-select-tag').select2({
+            width: '100%',
+            placeholder: "Search and select tag to associate...",
+            allowClear: true
+        });
+    }
+});
+
+function updateTagRequestField(id, field, value) {
+    let url = '';
+    if (field == 'property_id') url = '{{ site_url('tag-requests/update-property/') }}' + id;
+    else if (field == 'status') url = '{{ site_url('tag-requests/update-status/') }}' + id;
+    else if (field == 'type') url = '{{ site_url('tag-requests/update-type/') }}' + id;
+        
+    const data = new FormData();
+    data.append(field, value);
+
+    fetch(url, {
+        method: 'POST',
+        body: data
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert(data.message || 'Failed to update.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating.');
+    });
+}
+</script>
+{% endblock %}

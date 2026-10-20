@@ -1,0 +1,95 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Properties | Martech TMS{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 mb-4 border-bottom gap-3">
+    <div>
+        <h2 class="fw-bold mb-1" style="letter-spacing: -0.5px;">Properties</h2>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">
+            Web and shop domains managed across regional subsidiaries.
+        </p>
+    </div>
+    <a href="{{ url_for('properties.create') }}" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+        <i class="bi bi-plus-lg"></i> Add Property
+    </a>
+</div>
+
+<div class="table-responsive rounded-3 border">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th style="width: 60px;">ID</th>
+                <th>Property Name</th>
+                <th>Subsidiary</th>
+                <th>Country</th>
+                <th>Language</th>
+                <th>Type</th>
+                <th>Website URL</th>
+                <th style="width: 100px;" class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in properties %}
+            <tr>
+                <td class="font-monospace text-muted">{{ p.id }}</td>
+                <td class="fw-semibold text-dark">{{ p.name }}</td>
+                <td>
+                    <span class="badge bg-light text-dark border">{{ p.subsidiary.name if p.subsidiary else '-' }}</span>
+                </td>
+                <td class="small">{{ p.country.name if p.country else '-' }}</td>
+                <td class="small">{{ p.language.name if p.language else '-' }}</td>
+                <td>
+                    {% if p.is_shop %}
+                    <span class="badge bg-info text-dark">Shop</span>
+                    {% else %}
+                    <span class="badge bg-light text-secondary border">Standard</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if p.website %}
+                    <a href="{{ p.website }}" target="_blank" class="small text-decoration-none text-truncate d-inline-block" style="max-width: 250px;">
+                        {{ p.website }} <i class="bi bi-box-arrow-up-right" style="font-size: 0.65rem;"></i>
+                    </a>
+                    {% else %}
+                    <span class="text-muted small">-</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-light border p-1 px-2" data-bs-toggle="modal" data-bs-target="#editUrlModal{{ p.id }}" title="Edit Website URL">
+                        <i class="bi bi-link-45deg"></i>
+                    </button>
+                </td>
+            </tr>
+
+            <!-- Edit URL Modal -->
+            <div class="modal fade" id="editUrlModal{{ p.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content rounded-4 border-0 shadow">
+                        <form method="POST" action="{{ url_for('properties.update_url', id=p.id) }}">
+                            <div class="modal-header border-bottom">
+                                <h6 class="modal-title fw-bold">Update Website URL</h6>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <p class="small text-muted mb-3">{{ p.name }}</p>
+                                <label class="form-label small fw-semibold">Target Website URL</label>
+                                <input type="url" name="website" class="form-control" value="{{ p.website or '' }}" placeholder="https://www.samsung.com/..." required>
+                            </div>
+                            <div class="modal-footer border-top">
+                                <button type="button" class="btn btn-light btn-sm border" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary btn-sm">Save URL</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <tr>
+                <td colspan="8" class="text-center py-5 text-muted">No properties found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

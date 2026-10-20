@@ -1,0 +1,210 @@
+<nav class="navbar navbar-expand-lg navbar-light p-0">
+    <div class="container-fluid p-0">
+        <!-- Brand -->
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('dashboard.index') }}">
+            <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded-3 shadow-sm" style="width: 36px; height: 36px;">
+                <i class="bi bi-tag-fill fs-5"></i>
+            </div>
+            <div class="d-flex flex-column">
+                <span class="fw-bold fs-6 text-dark" style="letter-spacing: -0.3px;">Martech TMS</span>
+                <span class="text-muted" style="font-size: 0.68rem; margin-top: -3px;">Tag Monitoring System</span>
+            </div>
+        </a>
+
+        <!-- Mobile Toggle -->
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Nav Links -->
+        <div class="collapse navbar-collapse" id="navbarMain">
+            <ul class="navbar-nav me-auto ms-lg-4 mb-2 mb-lg-0 gap-1">
+                <!-- Dashboard & Reports -->
+                {% if permissions.get('dashboard') %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-1 {{ 'active fw-semibold text-primary' if current_path.startswith('/dashboard') or current_path.startswith('/reports') else 'text-secondary' }}" 
+                       href="{{ url_for('dashboard.index') }}" id="navDashboard" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <ul class="dropdown-menu shadow-sm border-0 rounded-3 mt-2">
+                        <li>
+                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ url_for('dashboard.index') }}">
+                                <i class="bi bi-speedometer2 text-primary"></i> Overview
+                            </a>
+                        </li>
+                        {% if permissions.get('reports') %}
+                        <li>
+                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ url_for('reports.index') }}">
+                                <i class="bi bi-file-earmark-bar-graph text-info"></i> Weekly Reports
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
+                <!-- Tags -->
+                {% if permissions.get('tags') %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-1 {{ 'active fw-semibold text-primary' if current_path.startswith('/tags') or current_path.startswith('/tag-requests') or current_path.startswith('/properties') else 'text-secondary' }}" 
+                       href="{{ url_for('tags.index') }}" id="navTags" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-tags-fill"></i>
+                        <span>Tags</span>
+                    </a>
+                    <ul class="dropdown-menu shadow-sm border-0 rounded-3 mt-2">
+                        <li>
+                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ url_for('tags.index') }}">
+                                <i class="bi bi-collection text-primary"></i> Inventory
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ url_for('tags.repository') }}">
+                                <i class="bi bi-code-square text-success"></i> Repository
+                            </a>
+                        </li>
+                        {% if permissions.get('tag-requests') %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ url_for('tag_requests.index') }}">
+                                <i class="bi bi-send-plus text-primary"></i> Tag Requests
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if permissions.get('properties') %}
+                        <li>
+                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ url_for('properties.index') }}">
+                                <i class="bi bi-globe text-secondary"></i> Properties
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
+                <!-- Vendors -->
+                {% if permissions.get('vendors') %}
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center gap-1 {{ 'active fw-semibold text-primary' if current_path.startswith('/vendors') else 'text-secondary' }}" 
+                       href="{{ url_for('vendors.index') }}">
+                        <i class="bi bi-building"></i>
+                        <span>Vendors</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                <!-- Jira -->
+                {% if permissions.get('jira') %}
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center gap-1 {{ 'active fw-semibold text-primary' if current_path.startswith('/jira') else 'text-secondary' }}" 
+                       href="{{ url_for('jira.index') }}">
+                        <i class="bi bi-kanban"></i>
+                        <span>Jira Tracking</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                <!-- Tasks / Activity Logs -->
+                {% if permissions.get('tasks') %}
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center gap-1 {{ 'active fw-semibold text-primary' if current_path.startswith('/tasks') else 'text-secondary' }}" 
+                       href="{{ url_for('tasks.index') }}">
+                        <i class="bi bi-check2-square"></i>
+                        <span>Tasks</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                <!-- Settings -->
+                {% if permissions.get('settings') %}
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center gap-1 {{ 'active fw-semibold text-primary' if current_path.startswith('/settings') else 'text-secondary' }}" 
+                       href="{{ url_for('settings.index') }}">
+                        <i class="bi bi-gear-fill"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <!-- Right side: Notifications & Profile -->
+            <div class="d-flex align-items-center gap-3">
+                <!-- Notifications -->
+                <div class="dropdown">
+                    <button class="btn btn-light rounded-circle p-2 position-relative shadow-sm" type="button" id="notifDropdown" data-bs-toggle="dropdown">
+                        <i class="bi bi-bell fs-6"></i>
+                        {% if unread_notifications_count > 0 %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 0.65rem;">
+                            {{ unread_notifications_count }}
+                        </span>
+                        {% endif %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2 p-2" style="width: 300px;">
+                        <li class="d-flex justify-content-between align-items-center px-2 py-1 border-bottom">
+                            <span class="fw-bold small">Notifications</span>
+                            {% if unread_notifications_count > 0 %}
+                            <button class="btn btn-link btn-sm p-0 text-decoration-none" onclick="markAllNotificationsRead()">Mark all read</button>
+                            {% endif %}
+                        </li>
+                        <div id="notificationList" class="my-2" style="max-height: 250px; overflow-y: auto;">
+                            <li class="text-center text-muted small py-3">No unread notifications</li>
+                        </div>
+                    </ul>
+                </div>
+
+                <!-- User Profile Dropdown -->
+                <div class="dropdown">
+                    <a class="d-flex align-items-center gap-2 text-decoration-none dropdown-toggle p-1 rounded-pill" href="#" role="button" data-bs-toggle="dropdown">
+                        {% if current_user.profile_photo %}
+                        <img src="{{ url_for('download_file', file=current_user.profile_photo) }}" class="rounded-circle object-fit-cover shadow-sm" width="36" height="36" alt="Profile">
+                        {% else %}
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px; font-weight: 600; font-size: 0.85rem;">
+                            {{ current_user.name[:2] ~ upper() }}
+                        </div>
+                        {% endif %}
+                        <div class="d-none d-md-flex flex-column text-start me-1">
+                            <span class="fw-semibold text-dark" style="font-size: 0.85rem; line-height: 1.1;">{{ current_user.name }}</span>
+                            <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem; margin-top: 2px;">{{ current_user.role_name }}</span>
+                        </div>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">
+                        <li>
+                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ url_for('profile.index') }}">
+                                <i class="bi bi-person text-secondary"></i> My Profile
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item py-2 d-flex align-items-center gap-2 text-danger" href="{{ url_for('auth.logout') }}">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<script>
+    function markAllNotificationsRead() {
+        fetch('{{ url_for("notifications.mark_all_read") }}', { method: 'POST' })
+            .then(r => r.json())
+            .then(d => { if(d.success) window.location.reload(); });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('#navbarMain .nav-item.dropdown > .dropdown-toggle').forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (e.ctrlKey || e.metaKey || e.shiftKey || e.which === 2 || e.button === 1) return;
+                const dropdownMenu = link.closest('.nav-item.dropdown')?.querySelector('.dropdown-menu');
+                const firstLink = dropdownMenu?.querySelector('a.dropdown-item');
+                const targetUrl = firstLink ? firstLink.getAttribute('href') : link.getAttribute('href');
+                if (targetUrl && targetUrl !== '#' && !targetUrl.startsWith('javascript:')) {
+                    e.preventDefault();
+                    window.location.href = targetUrl;
+                }
+            });
+        });
+    });
+</script>

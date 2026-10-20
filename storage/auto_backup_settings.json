@@ -1,0 +1,6 @@
+{
+  "enabled": false,
+  "retention_count": 10,
+  "last_backup": "2026-10-19 14:29:33",
+  "last_status": "Success: Backup 'backup_2026-10-19_14-29-30_1792405770.sql' created."
+}

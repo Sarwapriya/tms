@@ -1,0 +1,88 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Project: {{ project_name }} | Martech TMS{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 mb-4 border-bottom gap-3">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-primary">Project</span>
+            <h3 class="fw-bold mb-0">{{ project_name }}</h3>
+        </div>
+        <p class="text-muted small mb-0">{{ tasks|length }} associated deliverables</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{{ url_for('tasks.index') }}" class="btn btn-light btn-sm border">Back to Tasks</a>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Tasks list -->
+    <div class="col-12 col-lg-8">
+        <div class="table-responsive rounded-3 border">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th>Task Title</th>
+                        <th>Ticket ID</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Assignee</th>
+                        <th style="width: 70px;" class="text-end">View</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tasks %}
+                    <tr>
+                        <td class="font-monospace text-muted">{{ t.id }}</td>
+                        <td>
+                            <a href="{{ url_for('tasks.view', id=t.id) }}" class="fw-semibold text-dark text-decoration-none">
+                                {{ t.title }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if t.ticket_id %}
+                            <span class="badge bg-light text-primary border font-monospace">{{ t.ticket_id }}</span>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>{{ t.priority|priority_badge }}</td>
+                        <td>{{ t.status|task_status_badge }}</td>
+                        <td class="small">{{ Constants.USERS.get(t.assignee, 'System') }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('tasks.view', id=t.id) }}" class="btn btn-sm btn-light border p-1">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No tasks recorded for this project.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Project Comments / Notes -->
+    <div class="col-12 col-lg-4">
+        <div class="p-4 bg-light rounded-4 border">
+            <h5 class="fw-bold mb-3"><i class="bi bi-chat-quote me-2 text-primary"></i>Project Notes</h5>
+            <div class="mb-3" style="max-height: 350px; overflow-y: auto;">
+                {% for c in comments %}
+                <div class="p-3 bg-white rounded-3 border mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold small text-primary">{{ users.get(c.commented_by) ~ full_name if users.get(c.commented_by) else 'User' }}</span>
+                        <span class="text-muted" style="font-size: 0.7rem;">{{ c.created_at|format_date }}</span>
+                    </div>
+                    <div class="small text-dark">{{ c.comment }}</div>
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">No project notes recorded yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,129 @@
+# ==============================================================================
+# MARTECH TMS (PYTHON APP) - GITIGNORE
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment & Secret Credentials
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# ------------------------------------------------------------------------------
+# 2. Python Cache & Bytecode
+# ------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+env.bak/
+venv.bak/
+
+# ------------------------------------------------------------------------------
+# 3. Application Storage, Uploads & Backups
+# ------------------------------------------------------------------------------
+storage/backups/*
+!storage/backups/.gitkeep
+storage/logs/*
+!storage/logs/.gitkeep
+storage/uploads/temp/*
+!storage/uploads/temp/.gitkeep
+# User-uploaded files (client documents) - never commit
+storage/uploads/*
+!storage/uploads/index.html
+
+# ------------------------------------------------------------------------------
+# 4. Database Dumps & SQL Backups
+# ------------------------------------------------------------------------------
+*.sql.bak
+*.sql.gz
+*.dump
+backup_*.sql
+
+# ------------------------------------------------------------------------------
+# 5. Frontend & Node Packages
+# ------------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ------------------------------------------------------------------------------
+# 6. Operating System Junk & Office Temp Files
+# ------------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Office Lock Files
+~$*.xlsx
+~$*.xls
+~$*.docx
+~$*.pptx
+
+# Linux
+*~
+
+# ------------------------------------------------------------------------------
+# 7. IDEs & Editors
+# ------------------------------------------------------------------------------
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# ------------------------------------------------------------------------------
+# 8. Logs & Temporary Files
+# ------------------------------------------------------------------------------
+*.log
+*.tmp
+*.temp
+
+# Local scratch / debug files
+scratch/

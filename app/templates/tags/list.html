@@ -1,0 +1,1854 @@
+{% extends 'layouts/default.html' %}
+
+{% block title %}Martech TMS{% endblock %}
+
+{% block content %}
+<style>
+    #tblTags tbody tr {
+        cursor: pointer;
+    }
+
+    .selected-row td {
+        background-color: rgba(0, 113, 227, 0.05) !important;
+    }
+
+    .floating-action-bar {
+        position: fixed;
+        bottom: -80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(29, 29, 31, 0.92);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 40px;
+        padding: 10px 24px;
+        z-index: 1050;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+        transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+        opacity: 0;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .floating-action-bar.show {
+        bottom: 30px;
+        opacity: 1;
+    }
+
+    .floating-action-info {
+        color: #ffffff;
+        font-size: 0.95rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+
+    .floating-action-info .count-badge {
+        background: #0071e3;
+        color: #ffffff;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .floating-action-divider {
+        width: 1px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .floating-btn-renew {
+        background: #0071e3;
+        color: #ffffff;
+        border: none;
+        border-radius: 30px;
+        padding: 8px 18px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none !important;
+        white-space: nowrap;
+        transition: background-color 0.2s, transform 0.2s;
+    }
+
+    .floating-btn-renew:hover {
+        background: #147ce5;
+        color: #ffffff;
+        transform: scale(1.02);
+    }
+
+    .floating-btn-renew:active {
+        transform: scale(0.98);
+    }
+
+    .floating-btn-verify {
+        background: #34c759;
+        color: #ffffff;
+        border: none;
+        border-radius: 30px;
+        padding: 8px 18px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none !important;
+        white-space: nowrap;
+        transition: background-color 0.2s, transform 0.2s;
+    }
+
+    .floating-btn-verify:hover {
+        background: #30b852;
+        color: #ffffff;
+        transform: scale(1.02);
+    }
+
+    .floating-btn-verify:active {
+        transform: scale(0.98);
+    }
+
+    .floating-btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 30px;
+        padding: 8px 18px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none !important;
+        white-space: nowrap;
+        transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+    }
+
+    .floating-btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: #ffffff;
+        transform: scale(1.02);
+    }
+
+    .floating-btn-secondary:active {
+        transform: scale(0.98);
+    }
+
+    /* Action Dropdown Style Experiment */
+    .actions-cell {
+        position: relative;
+        width: 90px;
+        min-width: 90px;
+        text-align: center;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+
+    #tblTags tbody td.actions-cell,
+    #tblTags tbody td:not(.actions-cell):has(a:not([onclick]):not(.text-muted)) {
+        cursor: pointer;
+    }
+
+    #tblTags tbody td:not(.actions-cell):has(a:not([onclick]):not(.text-muted)):hover a:not([onclick]):not(.text-muted) {
+        color: var(--color-primary) !important;
+    }
+
+    .action-style-original-wrapper,
+    .action-style-glassmorphic-wrapper,
+    .action-style-hover-inline-wrapper {
+        display: none;
+    }
+
+    #tblTags.style-original .action-style-original-wrapper {
+        display: block;
+    }
+
+    #tblTags.style-glassmorphic .action-style-glassmorphic-wrapper {
+        display: block;
+    }
+
+    #tblTags.style-hover-inline .action-style-hover-inline-wrapper {
+        display: flex;
+        justify-content: center;
+    }
+
+    /* 1. Sleek Minimalist Dot Trigger Styling */
+    .action-trigger-dot {
+        background: transparent;
+        border: none;
+        color: var(--color-text-muted);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .action-trigger-dot:hover,
+    .action-trigger-dot[aria-expanded="true"] {
+        background-color: var(--color-secondary-bg);
+        color: var(--color-text-base);
+        transform: scale(1.05);
+    }
+
+    .action-trigger-dot:active {
+        transform: scale(0.95);
+    }
+
+    /* 2. Glassmorphic Dropdown Styling */
+    .glassmorphic-menu {
+        background: rgba(255, 255, 255, 0.82) !important;
+        backdrop-filter: blur(12px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+        border: 1px solid rgba(0, 0, 0, 0.08) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+        border-radius: 12px !important;
+        padding: 6px !important;
+        transform-origin: top right;
+        animation: dropdownFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes dropdownFadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.96) translateY(-4px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .glassmorphic-menu .dropdown-item {
+        border-radius: 8px !important;
+        padding: 6px 12px !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        transition: background-color 0.15s ease, color 0.15s ease !important;
+        color: var(--color-text-base) !important;
+    }
+
+    .glassmorphic-menu .dropdown-item:hover {
+        background-color: var(--color-primary) !important;
+        color: #ffffff !important;
+    }
+
+    .glassmorphic-menu .dropdown-item:hover i {
+        color: #ffffff !important;
+    }
+
+    /* 3. Hover-Revealed Inline Action Buttons Styling */
+    .hover-actions-container {
+        opacity: 0;
+        transform: translateX(6px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    #tblTags tr:hover .hover-actions-container {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    #tblTags tr:focus-within .hover-actions-container,
+    #tblTags tr.selected-row .hover-actions-container {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .hover-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        color: var(--color-text-muted);
+        background-color: var(--color-secondary-bg);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        text-decoration: none !important;
+        font-size: 0.75rem;
+    }
+
+    .hover-action-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .hover-action-btn:active {
+        transform: scale(0.95);
+    }
+
+    .hover-action-btn.btn-view:hover {
+        background-color: var(--color-badge-primary-bg) !important;
+        color: var(--color-badge-primary-text) !important;
+    }
+
+    .hover-action-btn.btn-update:hover {
+        background-color: var(--color-badge-warning-bg) !important;
+        color: var(--color-badge-warning-text) !important;
+    }
+
+    .hover-action-btn.btn-verify:hover {
+        background-color: var(--color-badge-success-bg) !important;
+        color: var(--color-badge-success-text) !important;
+    }
+
+    /* Micro Segmented Control Styling */
+    .micro-segmented-control {
+        background-color: var(--color-secondary-bg);
+        border-radius: 20px;
+        padding: 3px;
+        display: inline-flex;
+        gap: 2px;
+        border: 1px solid rgba(0, 0, 0, 0.03);
+    }
+
+    .micro-segmented-control button {
+        border: none;
+        background: transparent;
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        border-radius: 15px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        outline: none;
+    }
+
+    .micro-segmented-control button:hover {
+        color: var(--color-text-base);
+    }
+
+    .micro-segmented-control button.active {
+        background-color: var(--color-card-bg);
+        color: var(--color-text-base);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+</style>
+
+{{ csrf_field() }}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom flex-wrap gap-3">
+        <div>
+            <h2 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                <span>Tag Inventory</span>
+                <span class="badge bg-secondary text-secondary"
+                    style="font-size: 0.85rem; font-weight: 600; padding: 0.35em 0.7em; border-radius: 20px;">
+                    {{ totalTags }}
+                </span>
+                <span id="selectedCountBadge" class="badge bg-primary text-white"
+                    style="display: none; font-size: 0.85rem; font-weight: 500; padding: 0.35em 0.7em; border-radius: 20px;">
+                    0 selected
+                </span>
+            </h2>
+            <p class="text-secondary small mb-0">Manage and monitor marketing tag configurations, Adobe Launch rules,
+                and expiration schedules.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ site_url('tags/create') }}" title="Add Tag Information"
+                class="apple-btn-primary btn-sm px-3 text-decoration-none">
+                <i class="bi bi-plus-lg me-1"></i> Add Tag
+            </a>
+
+            <div class="dropdown">
+                <button class="apple-btn-secondary btn-sm dropdown-toggle px-3 d-flex align-items-center gap-1"
+                    type="button" id="headerActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i> Actions
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="headerActionsDropdown"
+                    style="border-radius: 10px; border: 1px solid var(--color-border-input);">
+                    <li>
+                        <a class="dropdown-item py-2 text-success" href="#" id="btnVerify"
+                            style="display: none; font-size: 0.9rem; font-weight: 500;">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>Verify Tag
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item py-2" href="#" id="btnRenew" style="display: none; font-size: 0.9rem;">
+                            <i class="bi bi-calendar-check-fill text-primary me-2"></i>Date Extension
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item py-2" href="#" id="btnUpdateRule"
+                            style="display: none; font-size: 0.9rem;">
+                            <i class="bi bi-pencil-square text-primary me-2"></i>Update Rule
+                        </a>
+                    </li>
+                    <li id="menuBulkDivider" style="display: none;">
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li>
+                        <a class="dropdown-item py-2" href="{{ site_url('tags/upload-renewal-justifications') }}"
+                            style="font-size: 0.9rem;">
+                            <i class="bi bi-file-earmark-excel-fill text-danger me-2"></i>Update Renewal Justifications
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item py-2" href="#" id="btnShowExportModal"
+                            data-bs-toggle="modal" data-bs-target="#exportExcelModal"
+                            style="font-size: 0.9rem;">
+                            <i class="bi bi-file-earmark-arrow-down-fill text-secondary me-2"></i>Export as Excel
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metric Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Total Tags -->
+        <div class="col-md-3">
+            <div class="apple-metric-card border-start border-4 border-secondary" style="cursor: pointer;"
+                onclick="window.location.href='{{ site_url('tags?status=all') }}'">
+                <div class="apple-metric-label">
+                    <i class="bi bi-collection-fill text-secondary fs-5"></i>
+                    <span>Total Tags</span>
+                </div>
+                <div class="apple-metric-value text-secondary">{{ tagsModel.countAllTags() }}</div>
+                <div class="text-secondary small mt-2">Total tags in the system</div>
+            </div>
+        </div>
+
+        <!-- Expiring Soon -->
+        <div class="col-md-3">
+            <div class="apple-metric-card border-start border-4 border-danger" style="cursor: pointer;"
+                onclick="window.location.href='{{ site_url('tags?status=expiring') }}'">
+                <div class="apple-metric-label">
+                    <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                    <span>Expiring Soon</span>
+                </div>
+                <div class="apple-metric-value text-danger">{{ tagsModel.countExpiringTags() }}</div>
+                <div class="text-secondary small mt-2">Expiring within 15 days</div>
+            </div>
+        </div>
+
+        <!-- Pending Verification -->
+        <div class="col-md-3">
+            <div class="apple-metric-card border-start border-4 border-warning" style="cursor: pointer;"
+                onclick="window.location.href='{{ site_url('tags?status=' ~ Constants.STATUS_PENDING_VERIFICATION) }}'">
+                <div class="apple-metric-label">
+                    <i class="bi bi-hourglass-split text-warning fs-5"></i>
+                    <span>Pending Verification</span>
+                </div>
+                <div class="apple-metric-value text-warning">{{ tagsModel.countPendingVerificationTags() }}</div>
+                <div class="text-secondary small mt-2">Renewed tags awaiting QA</div>
+            </div>
+        </div>
+
+        <!-- Active Tags -->
+        <div class="col-md-3">
+            <div class="apple-metric-card border-start border-4 border-success" style="cursor: pointer;"
+                onclick="window.location.href='{{ site_url('tags?status=' ~ Constants.STATUS_ENABLED) }}'">
+                <div class="apple-metric-label">
+                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                    <span>Active Tags</span>
+                </div>
+                <div class="apple-metric-value text-success">{{ tagsModel.countActiveTags() }}</div>
+                <div class="text-secondary small mt-2">Currently active in AL</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters Form -->
+    <form method="get" class="m-0" id="filterForm">
+        <!-- Primary Search Bar -->
+        <div class="apple-control-bar mb-3">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Search Input -->
+                <div class="position-relative flex-grow-1" style="min-width: 250px;">
+                    <i class="bi bi-search text-muted position-absolute"
+                        style="left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.9rem;"></i>
+                    <input type="text" name="keyword" class="form-control form-control-xs"
+                        style="height: 36px; padding-left: 36px !important; border-radius: 20px;"
+                        placeholder="Search tags..." value="{{ old('keyword', filters.keyword) }}">
+                </div>
+
+                <!-- Toggle Filters Button -->
+                <button type="button" class="apple-btn-secondary btn-sm d-inline-flex align-items-center gap-2"
+                    style="height: 36px; border-radius: 20px; font-weight: 500;" data-bs-toggle="collapse"
+                    data-bs-target="#advancedFiltersCollapse"
+                    aria-expanded="{{ 'true' if hasActiveFilters else 'false' }}" aria-controls="advancedFiltersCollapse">
+                    <i class="bi bi-funnel"></i>
+                    <span>Filters</span>
+                    {% if activeFiltersCount > 0 %}
+                        <span class="badge bg-primary text-white rounded-circle px-1.5 py-0.5"
+                            style="font-size: 0.75rem; min-width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center;">
+                            {{ activeFiltersCount }}
+                        </span>
+                    {% endif %}
+                </button>
+
+                <!-- Action Buttons -->
+                <button type="submit" class="apple-btn-primary btn-sm px-4"
+                    style="height: 36px; border-radius: 20px;">Apply</button>
+                {% if request.args %}
+                    <a href="{{ site_url('tags') }}"
+                        class="apple-btn-secondary btn-sm px-4 text-decoration-none d-inline-flex align-items-center justify-content-center"
+                        style="height: 36px; border-radius: 20px;">Clear</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Collapsible Advanced Filters Panel -->
+        <div class="collapse {{ 'show' if hasActiveFilters else '' }} mb-4" id="advancedFiltersCollapse">
+            <div class="apple-card"
+                style="background-color: var(--color-bg-base); border: 1px solid rgba(0, 0, 0, 0.05); box-shadow: none; padding: 20px;">
+                <h5 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2"
+                    style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="bi bi-sliders text-primary"></i> Advanced Filters
+                </h5>
+                <div class="row g-3">
+                    <!-- Subsidiary -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Subsidiary</label>
+                        <select name="subsidiary_id" class="form-select form-select-xs"
+                            style="height: 34px; border-radius: 8px;">
+                            <option value="">All Subsidiaries</option>
+                            {% for val, label in subsidiaries.items() %}
+                                <option value="{{ val }}" {{ 'selected' if old('subsidiary_id', filters.subsidiary_id|string) == val|string else '' }}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Property -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Property</label>
+                        <select name="property_id" class="form-select form-select-xs searchable-select">
+                            <option value="">All Properties</option>
+                            {% for val, label in propertyOptions.items() %}
+                                <option value="{{ val }}" {{ 'selected' if old('property_id', filters.property_id|string) == val|string else '' }}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Vendor -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Vendor</label>
+                        <select name="vendor_id" class="form-select form-select-xs searchable-select-vendor">
+                            <option value="">All Vendors</option>
+                            {% for val, label in vendors.items() %}
+                                <option value="{{ val }}" {{ 'selected' if old('vendor_id', filters.vendor_id|string) == val|string else '' }}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Status</label>
+                        <select name="status" class="form-select form-select-xs"
+                            style="height: 34px; border-radius: 8px;">
+                            <option value="expiring" {{ 'selected' if (old('status', filters.status|string) == 'expiring') else '' }}>
+                                Expiring Soon (15 days)
+                            </option>
+                            {% for val, label in Constants.STATUS.items() %}
+                                <option value="{{ val }}" {{ 'selected' if (old('status', filters.status|string) == val|string or (val == 999 and filters.status == 'all')) else '' }}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Expiry From -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Expiry From</label>
+                        <div class="position-relative">
+                            <input type="text" name="al_end_date_from" id="al_end_date_from"
+                                class="form-control form-select-xs pe-5" style="height: 34px; border-radius: 8px;"
+                                value="{{ old('al_end_date_from', filters.al_end_date_from or '') }}" placeholder="YYYY-MM-DD">
+                            <i class="bi bi-calendar-event text-muted position-absolute"
+                                style="right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 0.875rem;"></i>
+                        </div>
+                    </div>
+
+                    <!-- Expiry To -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Expiry To</label>
+                        <div class="position-relative">
+                            <input type="text" name="al_end_date_to" id="al_end_date_to"
+                                class="form-control form-select-xs pe-5" style="height: 34px; border-radius: 8px;"
+                                value="{{ old('al_end_date_to', filters.al_end_date_to or '') }}" placeholder="YYYY-MM-DD">
+                            <i class="bi bi-calendar-event text-muted position-absolute"
+                                style="right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 0.875rem;"></i>
+                        </div>
+                    </div>
+
+                    <!-- Sort by Property -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">&nbsp;</label>
+                        <div class="form-check form-switch d-flex align-items-center gap-2" style="height: 34px;">
+                            <input class="form-check-input" type="checkbox" name="sort_by_property" value="1"
+                                id="sortByPropertySwitch" {{ 'checked' if request.args.get('sort_by_property') == '1' else '' }} onchange="this.form.submit()"
+                                style="cursor: pointer; width: 2.4em; height: 1.2em; margin-top: 0;">
+                            <label class="form-check-label small fw-medium text-secondary mb-0"
+                                for="sortByPropertySwitch" style="cursor: pointer; user-select: none;">Sort by Property</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" name="sort_by" value="{{ filters.sort_by or '' }}">
+        <input type="hidden" name="sort_dir" value="{{ filters.sort_dir or 'desc' }}">
+    </form>
+
+    <!-- Active Filters Pills -->
+    {% if hasActiveFilters %}
+        <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+            <span class="text-secondary small fw-medium">Active Filters:</span>
+            {% if request.args.get('keyword') %}
+                <a href="{{ remove_filter_url('keyword') }}"
+                    class="filter-pill badge bg-secondary text-decoration-none d-inline-flex align-items-center gap-1.5 py-1.5 px-2.5 rounded-pill border border-secondary"
+                    style="font-size: 0.8rem; font-weight: 500;">
+                    <span>Keyword: {{ request.args.get('keyword') }}</span>
+                    <i class="bi bi-x-circle-fill text-muted" style="font-size: 0.75rem;"></i>
+                </a>
+            {% endif %}
+            {% for key in advancedFilterKeys %}
+                {% set val = request.args.get(key) %}
+                {% if val and val != 'all' and val != '145' and val != 'None' %}
+                    {% if key == 'status' %}
+                        {% if val == 'expiring' %}
+                            {% set label = 'Status: Expiring Soon (15 days)' %}
+                        {% else %}
+                            {% set label = 'Status: ' ~ (Constants.STATUS.get(val|int, val)) %}
+                        {% endif %}
+                    {% elif key == 'al_end_date_from' %}
+                        {% set label = 'Expiry From: ' ~ val %}
+                    {% elif key == 'al_end_date_to' %}
+                        {% set label = 'Expiry To: ' ~ val %}
+                    {% elif key == 'sort_by_property' %}
+                        {% set label = 'Sort by Property: Enabled' %}
+                    {% elif key == 'subsidiary_id' %}
+                        {% set label = 'Subsidiary: ' ~ (subsidiaries.get(val|int, val)) %}
+                    {% elif key == 'property_id' %}
+                        {% set label = 'Property: ' ~ (propertyOptions.get(val|int, val)) %}
+                    {% elif key == 'vendor_id' %}
+                        {% set label = 'Vendor: ' ~ (vendors.get(val|int, val)) %}
+                    {% else %}
+                        {% set label = key ~ ': ' ~ val %}
+                    {% endif %}
+                    <a href="{{ remove_filter_url(key) }}"
+                        class="filter-pill badge bg-secondary text-decoration-none d-inline-flex align-items-center gap-1.5 py-1.5 px-2.5 rounded-pill border border-secondary"
+                        style="font-size: 0.8rem; font-weight: 500;">
+                        <span>{{ label }}</span>
+                        <i class="bi bi-x-circle-fill text-muted" style="font-size: 0.75rem;"></i>
+                    </a>
+                {% endif %}
+            {% endfor %}
+            <a href="{{ site_url('tags') }}" class="small text-muted text-decoration-none ms-2">Clear all</a>
+        </div>
+    {% endif %}
+
+    <!-- Table Meta and Action Style Switcher -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <span class="text-secondary small fw-medium">
+            Showing {{ tags|length }} of {{ totalTags }} results
+        </span>
+
+        <!-- Action Style Switcher -->
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-secondary"
+                style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8;">Action
+                Style:</span>
+            <div class="micro-segmented-control" id="actionStyleControl">
+                <button type="button" data-style="original">Original</button>
+                <button type="button" data-style="glassmorphic" class="active">Glassmorphic</button>
+                <button type="button" data-style="hover-inline">Hover Inline</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tags Table -->
+    {% set currentSortBy = filters.sort_by or '' %}
+    {% set currentSortDir = filters.sort_dir or 'desc' %}
+
+    <div class="apple-table-container">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 style-glassmorphic" id="tblTags">
+                <thead>
+                    <tr>
+                        <th class="form-label-sm fw-semibold">
+                            <a href="{{ getSortUrl('id', currentSortBy, currentSortDir) }}"
+                                class="text-decoration-none text-dark d-inline-flex align-items-center">
+                                # {{ getSortIcon('id', currentSortBy, currentSortDir) }}
+                            </a>
+                        </th>
+                        <th><input type="checkbox" id="selectAllTags" title="Select All" class="form-check-input"></th>
+                        <th class="form-label-sm fw-semibold">
+                            <a href="{{ getSortUrl('subsidiary_id', currentSortBy, currentSortDir) }}"
+                                class="text-decoration-none text-dark d-inline-flex align-items-center">
+                                Subsidiary {{ getSortIcon('subsidiary_id', currentSortBy, currentSortDir) }}
+                            </a>
+                        </th>
+                        <th class="form-label-sm fw-semibold">
+                            <a href="{{ getSortUrl('property_id', currentSortBy, currentSortDir) }}"
+                                class="text-decoration-none text-dark d-inline-flex align-items-center">
+                                Property {{ getSortIcon('property_id', currentSortBy, currentSortDir) }}
+                            </a>
+                        </th>
+                        <th class="form-label-sm fw-semibold">
+                            <a href="{{ getSortUrl('name', currentSortBy, currentSortDir) }}"
+                                class="text-decoration-none text-dark d-inline-flex align-items-center">
+                                Name {{ getSortIcon('name', currentSortBy, currentSortDir) }}
+                            </a>
+                        </th>
+                        <th class="form-label-sm fw-semibold">
+                            <a href="{{ getSortUrl('status', currentSortBy, currentSortDir) }}"
+                                class="text-decoration-none text-dark d-inline-flex align-items-center">
+                                Status {{ getSortIcon('status', currentSortBy, currentSortDir) }}
+                            </a>
+                        </th>
+                        <th class="form-label-sm fw-semibold">
+                            <a href="{{ getSortUrl('days', currentSortBy, currentSortDir) }}"
+                                class="text-decoration-none text-dark d-inline-flex align-items-center">
+                                Days {{ getSortIcon('days', currentSortBy, currentSortDir) }}
+                            </a>
+                        </th>
+                        <th class="form-label-sm fw-semibold">
+                            <a href="{{ getSortUrl('al_end_date', currentSortBy, currentSortDir) }}"
+                                class="text-decoration-none text-dark d-inline-flex align-items-center">
+                                End Date {{ getSortIcon('al_end_date', currentSortBy, currentSortDir) }}
+                            </a>
+                        </th>
+                        <th class="form-label-sm fw-semibold">
+                            <a href="{{ getSortUrl('updated_at', currentSortBy, currentSortDir) }}"
+                                class="text-decoration-none text-dark d-inline-flex align-items-center">
+                                Updated {{ getSortIcon('updated_at', currentSortBy, currentSortDir) }}
+                            </a>
+                        </th>
+                        <th class="form-label-sm fw-semibold text-dark text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if not tags %}
+                        <tr>
+                            <td colspan="10" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-2 mb-2 d-block text-secondary" style="opacity: 0.5;"></i>
+                                <span class="fw-semibold">No tags found</span>
+                                <p class="small text-secondary mb-0">Try adjusting your filters or search keywords.</p>
+                            </td>
+                        </tr>
+                    {% else %}
+                        {% for tag in tags %}
+                            {% set ticketId = ticketMap.get(tag.id) %}
+                            {% set relatedTask = taskMap.get(ticketId) if ticketId else none %}
+                            {% set prop_info = properties.get(tag.property_id, {'name': 'Unknown', 'ref_link': '#', 'subsidiary_id': 0}) %}
+                            {% set subsidiary = subsidiaries.get(prop_info.subsidiary_id, 'Global') %}
+                            <tr>
+                                <!-- ID -->
+                                <td>{{ tag.id }}</td>
+                                <!-- Checkbox -->
+                                <td>
+                                    <input type="checkbox" name="tag_ids[]" value="{{ tag.id }}"
+                                        data-status="{{ tag.status }}"
+                                        data-ticket-id="{{ ticketId or '' }}"
+                                        data-requested-date="{{ tag.requested_date or '' }}"
+                                        data-ref-link="{{ tag.ref_link or '' }}"
+                                        class="form-check-input">
+                                </td>
+                                <!-- Subsidiary -->
+                                <td>
+                                    <span class="badge" style="{{ random_bg_style(subsidiary) }}">
+                                        {{ subsidiary }}
+                                    </span>
+                                </td>
+                                <!-- Property -->
+                                <td>
+                                    <i class="bi bi-tag-fill" style="{{ random_text_style(tag.property_id) }}"></i>
+                                    <a href="{{ prop_info.ref_link }}" target="_blank" rel="noopener"
+                                        class="apple-link-dark form-label-sm ms-1">
+                                        {{ prop_info.name }}
+                                    </a>
+                                </td>
+                                <!-- Name -->
+                                <td class="form-label-sm">
+                                    <span class="group-hover-container align-items-center">
+                                        <a href="{{ site_url('tags/view/' ~ tag.id) }}"
+                                            class="apple-link-dark form-label-sm ms-1">
+                                            {{ tag.name }}
+                                        </a>
+                                        {% if tag.ref_link %}
+                                            <a href="{{ tag.ref_link }}" target="_blank" rel="noopener" class="text-muted ms-1"
+                                                style="font-size: 0.75rem; text-decoration: none;" title="View in Adobe Launch">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+                                        {% endif %}
+                                        <a href="javascript:void(0)" onclick="copyTagName('{{ tag.name|replace("'", "\\'") }}', this)"
+                                            title="Copy tag name" class="text-muted ms-2"
+                                            style="transition: color 0.2s; text-decoration: none; line-height: 1;">
+                                            <i class="bi bi-copy" style="font-size: 0.85rem;"></i>
+                                        </a>
+                                    </span>
+                                </td>
+                                <!-- Status -->
+                                <td>
+                                    <span class="badge {{ status_class(tag.status) }}">
+                                        {{ status_label(tag.status) }}
+                                    </span>
+                                    {% if (tag.status == Constants.STATUS_PENDING_VERIFICATION or tag.status == Constants.STATUS_ON_HOLD) and ticketId %}
+                                        <br>
+                                        {% if relatedTask %}
+                                            <a href="{{ site_url('tasks/view/' ~ relatedTask.id) }}" class="apple-link ms-1"
+                                                style="font-size: 0.8rem;">
+                                                {{ ticketId }}
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ site_url('tasks?keyword=' ~ ticketId) }}" class="apple-link ms-1"
+                                                style="font-size: 0.8rem;">
+                                                {{ ticketId }}
+                                            </a>
+                                        {% endif %}
+                                        <a href="{{ Constants.JIRA_LINK ~ ticketId }}" target="_blank" rel="noopener"
+                                            class="text-muted ms-1" style="font-size: 0.75rem;" title="View in JIRA">
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                    {% endif %}
+                                </td>
+                                <!-- Days -->
+                                {% if tag.al_end_date %}
+                                    {% set diffDays = diff_days(tag.al_end_date) %}
+                                    <td class="{{ days_class(diffDays) }} form-label-sm">
+                                        {{ diffDays if diffDays is not none else '-' }}
+                                    </td>
+                                {% else %}
+                                    <td class="text-muted form-label-sm">-</td>
+                                {% endif %}
+                                <!-- End Date -->
+                                <td class="{{ date_class(tag.al_end_date, tag.status) }} form-label-sm"
+                                    style="width:max-content; white-space:nowrap;">
+                                    {{ tag.al_end_date|format_date('%d-%m-%Y') or '-' }}
+                                    {% if tag.requested_date %}
+                                        <br><small class="text-muted">[{{ tag.requested_date|format_date('%d-%m-%Y') }}]</small>
+                                    {% endif %}
+                                </td>
+                                <!-- Updated At -->
+                                <td class="form-label-sm" style="width:max-content; white-space:nowrap;">
+                                    {{ tag.updated_at|format_date('%d-%m-%Y') }}
+                                </td>
+                                <!-- Actions -->
+                                <td class="text-nowrap actions-cell">
+                                    <!-- Original Style -->
+                                    <div class="action-style-original-wrapper">
+                                        <div class="dropdown">
+                                            <button
+                                                class="apple-btn-secondary btn-sm dropdown-toggle px-2.5 py-1 d-inline-flex align-items-center gap-1"
+                                                type="button" id="actionsDropdown_{{ tag.id }}" data-bs-toggle="dropdown"
+                                                aria-expanded="false" style="font-size: 0.8rem; border-radius: 9999px;">
+                                                Actions
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow"
+                                                aria-labelledby="actionsDropdown_{{ tag.id }}"
+                                                style="border-radius: 10px; border: 1px solid var(--color-border-input); z-index: 1050;">
+                                                <li>
+                                                    <a class="dropdown-item py-2"
+                                                        href="{{ site_url('tags/view/' ~ tag.id) }}"
+                                                        style="font-size: 0.85rem;">
+                                                        <i class="bi bi-eye text-primary me-2"></i>View Details
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item py-2"
+                                                        href="{{ site_url('tags/update/' ~ tag.id) }}"
+                                                        style="font-size: 0.85rem;">
+                                                        <i class="bi bi-pencil-square text-warning me-2"></i>Update Details
+                                                    </a>
+                                                </li>
+                                                {% if tag.status == Constants.STATUS_PENDING_VERIFICATION or (tag.status == Constants.STATUS_ON_HOLD and ticketId and tag.requested_date) %}
+                                                    <li>
+                                                        <hr class="dropdown-divider">
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item py-2 text-success btn-individual-verify"
+                                                            href="{{ site_url('tags/verify/' ~ tag.id) }}"
+                                                            style="font-size: 0.85rem; font-weight: 500;">
+                                                            <i class="bi bi-check-circle-fill text-success me-2"></i>Verify Tag
+                                                        </a>
+                                                    </li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    <!-- Style A: Glassmorphic Dropdown -->
+                                    <div class="action-style-glassmorphic-wrapper">
+                                        <div class="dropdown">
+                                            <button
+                                                class="action-trigger-dot d-inline-flex align-items-center justify-content-center"
+                                                type="button" id="actionsDropdownA_{{ tag.id }}" data-bs-toggle="dropdown"
+                                                aria-expanded="false" title="Actions">
+                                                <i class="bi bi-three-dots"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end glassmorphic-menu shadow"
+                                                aria-labelledby="actionsDropdownA_{{ tag.id }}" style="z-index: 1050;">
+                                                <li>
+                                                    <a class="dropdown-item py-2"
+                                                        href="{{ site_url('tags/view/' ~ tag.id) }}">
+                                                        <i class="bi bi-eye text-primary me-2"></i>View Details
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item py-2"
+                                                        href="{{ site_url('tags/update/' ~ tag.id) }}">
+                                                        <i class="bi bi-pencil-square text-warning me-2"></i>Update Details
+                                                    </a>
+                                                </li>
+                                                {% if tag.status == Constants.STATUS_PENDING_VERIFICATION or (tag.status == Constants.STATUS_ON_HOLD and ticketId and tag.requested_date) %}
+                                                    <li>
+                                                        <hr class="dropdown-divider">
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item py-2 text-success btn-individual-verify"
+                                                            href="{{ site_url('tags/verify/' ~ tag.id) }}"
+                                                            style="font-weight: 500;">
+                                                            <i class="bi bi-check-circle-fill text-success me-2"></i>Verify Tag
+                                                        </a>
+                                                    </li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    <!-- Style B: Hover-Revealed Inline Actions -->
+                                    <div class="action-style-hover-inline-wrapper">
+                                        <div class="hover-actions-container d-inline-flex align-items-center gap-1">
+                                            <a href="{{ site_url('tags/view/' ~ tag.id) }}"
+                                                class="hover-action-btn btn-view" data-bs-toggle="tooltip"
+                                                data-bs-placement="top" title="View Details">
+                                                <i class="bi bi-eye-fill"></i>
+                                            </a>
+                                            <a href="{{ site_url('tags/update/' ~ tag.id) }}"
+                                                class="hover-action-btn btn-update" data-bs-toggle="tooltip"
+                                                data-bs-placement="top" title="Update Details">
+                                                <i class="bi bi-pencil-fill"></i>
+                                            </a>
+                                            {% if tag.status == Constants.STATUS_PENDING_VERIFICATION or (tag.status == Constants.STATUS_ON_HOLD and ticketId and tag.requested_date) %}
+                                                <a href="{{ site_url('tags/verify/' ~ tag.id) }}"
+                                                    class="hover-action-btn btn-verify btn-individual-verify"
+                                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Verify Tag">
+                                                    <i class="bi bi-check-circle-fill"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Apple Style Pagination -->
+        {% if pagination and pagination.pages > 1 %}
+            <div class="mt-4 d-flex justify-content-center">
+                <nav aria-label="Page navigation" class="apple-pagination-container">
+                    <ul class="apple-pagination">
+                        {% if pagination.has_prev %}
+                            <li>
+                                <a href="{{ url_for_page(1) }}"><span>&laquo;</span></a>
+                            </li>
+                            <li>
+                                <a href="{{ url_for_page(pagination.prev_num) }}"><span>&lsaquo;</span></a>
+                            </li>
+                        {% endif %}
+                        {% for p in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=3) %}
+                            {% if p %}
+                                <li class="{{ 'active' if p == pagination.page else '' }}">
+                                    <a href="{{ url_for_page(p) }}">{{ p }}</a>
+                                </li>
+                            {% else %}
+                                <li class="disabled"><span>&hellip;</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if pagination.has_next %}
+                            <li>
+                                <a href="{{ url_for_page(pagination.next_num) }}"><span>&rsaquo;</span></a>
+                            </li>
+                            <li>
+                                <a href="{{ url_for_page(pagination.pages) }}"><span>&raquo;</span></a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Floating Action Bar -->
+<div id="floatingActionBar" class="floating-action-bar">
+    <div class="floating-action-info">
+        <span id="floatingSelectedCount" class="count-badge">0</span>
+        <span>selected</span>
+    </div>
+    <div class="floating-action-divider"></div>
+    <a href="#" id="floatingBtnVerify" class="floating-btn-verify" title="Verify Tags" style="display: none;">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>Verify</span>
+    </a>
+    <a href="#" id="floatingBtnRenew" class="floating-btn-renew" title="Date Extension">
+        <i class="bi bi-calendar-check-fill"></i>
+        <span>Extend</span>
+    </a>
+    <a href="#" id="floatingBtnUpdateRule" class="floating-btn-secondary" title="Create Update Rule Request">
+        <i class="bi bi-pencil-square"></i>
+        <span>Rule Update</span>
+    </a>
+    <a href="#" id="floatingBtnOpenLinks" class="floating-btn-secondary" title="Open Links in New Tabs">
+        <i class="bi bi-box-arrow-up-right"></i>
+        <span>Go to Launch</span>
+    </a>
+    <a href="#" id="floatingBtnDeselect" class="floating-btn-secondary" title="Deselect All">
+        <i class="bi bi-x-circle"></i>
+        <span>Deselect</span>
+    </a>
+</div>
+
+<!-- Verify RTE Modal -->
+<div class="modal fade" id="verifyRteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content apple-card" style="border-radius: 16px; border: none;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">Verification Message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-secondary small mb-3">Copy the message below to paste into your task tracker.</p>
+                <div id="verifyRteContent" class="form-control" contenteditable="true"
+                    style="min-height: 80px; border-radius: 8px; background-color: var(--color-bg-base); outline: none; cursor: text;">
+                    Launch verification has been completed.<br />
+                    For QA, as this was only a date extension, scope was limited to validating the tag expiry date,
+                    published status, and console logs.<br />
+                    All checks were completed <b><font color="#008000">successfully</font></b>.<br />
+                    Will proceed to closing this task.
+                </div>
+                <div class="d-flex justify-content-end mt-4 gap-2">
+                    <button type="button" class="apple-btn-secondary btn-sm" id="btnCopyVerifyMsg">
+                        <i class="bi bi-copy"></i> Copy
+                    </button>
+                    <button type="button" class="apple-btn-primary btn-sm" id="btnProceedVerify">
+                        Proceed
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Tags to Excel Modal -->
+<div class="modal fade" id="exportExcelModal" tabindex="-1" aria-labelledby="exportExcelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 850px;">
+        <div class="modal-content" style="border-radius: 18px; border: none; box-shadow: 0 20px 40px rgba(0,0,0,0.12); overflow: hidden;">
+            <form id="exportExcelForm" method="post" action="{{ site_url('tags/export') }}">
+                <!-- Modal Header -->
+                <div class="modal-header border-0 pb-1 pt-4 px-4 align-items-start">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width: 46px; height: 46px; border-radius: 12px; background: #eaf8ee; color: #28a745; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                            <i class="bi bi-file-earmark-excel"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <h5 class="modal-title fw-bold text-dark mb-0" id="exportExcelModalLabel" style="font-size: 1.25rem;">Export Tags to Excel</h5>
+                                <span class="badge rounded-pill fw-medium" style="background: #f1f3f5; color: #495057; font-size: 0.75rem; padding: 4px 10px;">{{ totalTags }} tags</span>
+                            </div>
+                            <p class="text-secondary small mb-0 mt-1" style="font-size: 0.85rem;">Select default or additional fields to include in your Excel export.</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.85rem; margin-top: 2px;"></button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="modal-body px-4 pt-3 pb-3">
+                    <!-- Actions Toolbar -->
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-export-pill" id="btnExportSelectAll">
+                                <i class="bi bi-check2-all me-1"></i> Select All
+                            </button>
+                            <button type="button" class="btn btn-sm btn-export-pill" id="btnExportDeselectAll">
+                                <i class="bi bi-dash-circle me-1"></i> Deselect All
+                            </button>
+                            <button type="button" class="btn btn-sm btn-export-pill-primary" id="btnExportResetDefault">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Reset to Default
+                            </button>
+                        </div>
+                        <span class="badge rounded-pill fw-medium px-3 py-2" id="exportFieldsCounter"
+                            style="background: #edf5ff; color: #0071e3; font-size: 0.8rem;">
+                            8 of 21 fields selected
+                        </span>
+                    </div>
+
+                    <!-- Default Fields Section -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-star-fill text-warning" style="font-size: 0.85rem;"></i>
+                                <span class="fw-bold text-dark" style="font-size: 0.78rem; letter-spacing: 0.5px; text-transform: uppercase;">DEFAULT FIELDS</span>
+                                <span class="badge rounded-pill fw-medium" style="background: #f1f3f5; color: #6c757d; font-size: 0.72rem; padding: 3px 8px;">Standard Export (8)</span>
+                            </div>
+                            <span class="text-muted" style="font-size: 0.75rem;">Selected by default</span>
+                        </div>
+                        <div class="export-fields-grid">
+                            <!-- Subsidiary -->
+                            <label class="export-field-card selected" for="field_subsidiary">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="subsidiary" id="field_subsidiary" checked data-is-default="true">
+                                    <span class="export-field-title text-truncate">Subsidiary</span>
+                                </div>
+                                <span class="export-badge-default">Default</span>
+                            </label>
+
+                            <!-- Property Name -->
+                            <label class="export-field-card selected" for="field_property_name">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="property_name" id="field_property_name" checked data-is-default="true">
+                                    <span class="export-field-title text-truncate">Property Name</span>
+                                </div>
+                                <span class="export-badge-default">Default</span>
+                            </label>
+
+                            <!-- Tag Name -->
+                            <label class="export-field-card selected" for="field_tag_name">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="tag_name" id="field_tag_name" checked data-is-default="true">
+                                    <span class="export-field-title text-truncate">Tag Name</span>
+                                </div>
+                                <span class="export-badge-default">Default</span>
+                            </label>
+
+                            <!-- Days -->
+                            <label class="export-field-card selected" for="field_days">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="days" id="field_days" checked data-is-default="true">
+                                    <span class="export-field-title text-truncate">Days</span>
+                                </div>
+                                <span class="export-badge-default">Default</span>
+                            </label>
+
+                            <!-- AL End Date -->
+                            <label class="export-field-card selected" for="field_al_end_date">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="al_end_date" id="field_al_end_date" checked data-is-default="true">
+                                    <span class="export-field-title text-truncate">AL End Date</span>
+                                </div>
+                                <span class="export-badge-default">Default</span>
+                            </label>
+
+                            <!-- Requested Date -->
+                            <label class="export-field-card selected" for="field_requested_date">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="requested_date" id="field_requested_date" checked data-is-default="true">
+                                    <span class="export-field-title text-truncate">Requested Date</span>
+                                </div>
+                                <span class="export-badge-default">Default</span>
+                            </label>
+
+                            <!-- Updated -->
+                            <label class="export-field-card selected" for="field_updated_at">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="updated_at" id="field_updated_at" checked data-is-default="true">
+                                    <span class="export-field-title text-truncate">Updated</span>
+                                </div>
+                                <span class="export-badge-default">Default</span>
+                            </label>
+
+                            <!-- Status -->
+                            <label class="export-field-card selected" for="field_status">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="status" id="field_status" checked data-is-default="true">
+                                    <span class="export-field-title text-truncate">Status</span>
+                                </div>
+                                <span class="export-badge-default">Default</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Additional Available Fields Section -->
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-plus-circle-fill text-primary" style="font-size: 0.85rem;"></i>
+                                <span class="fw-bold text-dark" style="font-size: 0.78rem; letter-spacing: 0.5px; text-transform: uppercase;">ADDITIONAL AVAILABLE FIELDS</span>
+                                <span class="badge rounded-pill fw-medium" style="background: #edf5ff; color: #0071e3; font-size: 0.72rem; padding: 3px 8px;">Optional (13)</span>
+                            </div>
+                            <span class="text-muted" style="font-size: 0.75rem;">Pick any extra fields needed</span>
+                        </div>
+                        <div class="export-fields-grid">
+                            <!-- Tag ID -->
+                            <label class="export-field-card" for="field_tag_id">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="tag_id" id="field_tag_id" data-is-default="false">
+                                    <span class="export-field-title text-truncate">Tag ID</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+
+                            <!-- Requested Name -->
+                            <label class="export-field-card" for="field_requested_name">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="requested_name" id="field_requested_name" data-is-default="false">
+                                    <span class="export-field-title text-truncate">Requested Name</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+
+                            <!-- Vendor -->
+                            <label class="export-field-card" for="field_vendor">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="vendor" id="field_vendor" data-is-default="false">
+                                    <span class="export-field-title text-truncate">Vendor</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+
+                            <!-- Firing Conditions -->
+                            <label class="export-field-card" for="field_conditions">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="conditions" id="field_conditions" data-is-default="false">
+                                    <span class="export-field-title text-truncate">Firing Conditions</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+
+                            <!-- AL Ref Link -->
+                            <label class="export-field-card" for="field_ref_link">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="ref_link" id="field_ref_link" data-is-default="false">
+                                    <span class="export-field-title text-truncate">AL Ref Link</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+
+                            <!-- Requester Name -->
+                            <label class="export-field-card" for="field_requester_name">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="requester_name" id="field_requester_name" data-is-default="false">
+                                    <span class="export-field-title text-truncate">Requester Name</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+
+                            <!-- Requester Email -->
+                            <label class="export-field-card" for="field_requester_email">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="requester_email" id="field_requester_email" data-is-default="false">
+                                    <span class="export-field-title text-truncate">Requester Email</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+
+                            <!-- Requester Organization -->
+                            <label class="export-field-card" for="field_requester_organization">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="requester_organization" id="field_requester_organization" data-is-default="false">
+                                    <span class="export-field-title text-truncate">Requester Organization</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+
+                            <!-- JavaScript Code -->
+                            <label class="export-field-card" for="field_js_code">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="js_code" id="field_js_code" data-is-default="false">
+                                    <span class="export-field-title text-truncate">JavaScript Code</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+
+                            <!-- Property Website URL -->
+                            <label class="export-field-card" for="field_property_website_url">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="property_website_url" id="field_property_website_url" data-is-default="false">
+                                    <span class="export-field-title text-truncate">Property Website URL</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+
+                            <!-- Created Date -->
+                            <label class="export-field-card" for="field_created_at">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="created_at" id="field_created_at" data-is-default="false">
+                                    <span class="export-field-title text-truncate">Created Date</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+
+                            <!-- Created By -->
+                            <label class="export-field-card" for="field_created_by">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="created_by" id="field_created_by" data-is-default="false">
+                                    <span class="export-field-title text-truncate">Created By</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+
+                            <!-- Updated By -->
+                            <label class="export-field-card" for="field_updated_by">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <input class="form-check-input export-checkbox mt-0" type="checkbox" name="fields" value="updated_by" id="field_updated_by" data-is-default="false">
+                                    <span class="export-field-title text-truncate">Updated By</span>
+                                </div>
+                                <span class="export-badge-extra">+ Extra</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden inputs container for filter parameters -->
+                <div id="exportFilterParamsContainer"></div>
+
+                <!-- Modal Footer -->
+                <div class="modal-footer border-0 px-4 pt-2 pb-4 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-1.5 text-secondary" style="font-size: 0.85rem;">
+                        <i class="bi bi-info-circle text-primary" style="font-size: 0.95rem;"></i>
+                        <span>Export includes current filters & searches.</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn text-secondary px-4 fw-medium" data-bs-dismiss="modal"
+                            style="background: #f1f3f5; border: none; border-radius: 20px; font-size: 0.88rem; padding-top: 8px; padding-bottom: 8px;">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn text-white px-4 fw-semibold d-inline-flex align-items-center gap-2" id="btnSubmitExportExcel"
+                            style="background: #28a745; border: none; border-radius: 20px; font-size: 0.88rem; padding-top: 8px; padding-bottom: 8px; box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3);">
+                            <i class="bi bi-download"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        flatpickr("#al_end_date_from, #al_end_date_to", {
+            dateFormat: "Y-m-d",
+            disableMobile: "true"
+        });
+
+        $('.searchable-select').select2({
+            width: '100%',
+            placeholder: "All Properties",
+            allowClear: true
+        });
+
+        $('.searchable-select-vendor').select2({
+            width: '100%',
+            placeholder: "All Vendors",
+            allowClear: true
+        });
+
+        const btnRenew = document.getElementById('btnRenew');
+        const btnUpdateRule = document.getElementById('btnUpdateRule');
+        const btnVerify = document.getElementById('btnVerify');
+        const table = document.getElementById('tblTags');
+        const selectAllTags = document.getElementById('selectAllTags');
+        const selectedCountBadge = document.getElementById('selectedCountBadge');
+
+        const updateSelectAllState = () => {
+            if (!selectAllTags) return;
+            const total = table.querySelectorAll('input[name="tag_ids[]"]').length;
+            const checked = table.querySelectorAll('input[name="tag_ids[]"]:checked').length;
+
+            selectAllTags.checked = (total > 0 && checked == total);
+            selectAllTags.indeterminate = (checked > 0 && checked < total);
+        };
+
+        const toggleButton = () => {
+            const checkedCount = table.querySelectorAll('input[name="tag_ids[]"]:checked').length;
+            const anyChecked = checkedCount > 0;
+
+            const pendingCheckedCount = [...table.querySelectorAll('input[name="tag_ids[]"]:checked')]
+                .filter(cb => {
+                    const status = cb.getAttribute('data-status');
+                    if (status == '4') return true;
+                    if (status == '9') {
+                        const ticketId = cb.getAttribute('data-ticket-id');
+                        const requestedDate = cb.getAttribute('data-requested-date');
+                        return ticketId && requestedDate;
+                    }
+                    return false;
+                }).length;
+            const anyPendingChecked = pendingCheckedCount > 0;
+
+            if (btnRenew) btnRenew.style.display = anyChecked ? 'block' : 'none';
+            if (btnUpdateRule) btnUpdateRule.style.display = anyChecked ? 'block' : 'none';
+            if (btnVerify) btnVerify.style.display = anyPendingChecked ? 'block' : 'none';
+
+            const menuBulkDivider = document.getElementById('menuBulkDivider');
+            if (menuBulkDivider) {
+                menuBulkDivider.style.display = anyChecked ? 'block' : 'none';
+            }
+
+            if (selectedCountBadge) {
+                selectedCountBadge.textContent = `${checkedCount} selected`;
+                selectedCountBadge.style.display = anyChecked ? 'inline-block' : 'none';
+            }
+
+            const floatingActionBar = document.getElementById('floatingActionBar');
+            const floatingSelectedCount = document.getElementById('floatingSelectedCount');
+            const floatingBtnVerify = document.getElementById('floatingBtnVerify');
+            if (floatingActionBar) {
+                if (anyChecked) {
+                    if (floatingSelectedCount) {
+                        floatingSelectedCount.textContent = checkedCount;
+                    }
+                    if (floatingBtnVerify) {
+                        floatingBtnVerify.style.display = anyPendingChecked ? 'flex' : 'none';
+                    }
+                    floatingActionBar.classList.add('show');
+                } else {
+                    floatingActionBar.classList.remove('show');
+                }
+            }
+
+            table.querySelectorAll('input[name="tag_ids[]"]').forEach(cb => {
+                const row = cb.closest('tr');
+                if (row) {
+                    if (cb.checked) {
+                        row.classList.add('selected-row');
+                    } else {
+                        row.classList.remove('selected-row');
+                    }
+                }
+            });
+        };
+
+        table.addEventListener('change', function (e) {
+            if (e.target && e.target.name == 'tag_ids[]') {
+                toggleButton();
+                updateSelectAllState();
+            }
+        });
+
+        table.addEventListener('mousedown', function (e) {
+            if (e.shiftKey) {
+                e.preventDefault();
+            }
+        });
+
+        let lastChecked = null;
+
+        table.addEventListener('click', function (e) {
+            const isCheckbox = e.target.matches('input[name="tag_ids[]"]');
+
+            const td = e.target.closest('td');
+            if (td) {
+                const clickedLinkOrBtn = e.target.closest('a, button, select, label, input');
+
+                if (clickedLinkOrBtn && clickedLinkOrBtn != e.target.closest('input[name="tag_ids[]"]')) {
+                    return;
+                }
+
+                if (td.classList.contains('actions-cell')) {
+                    if (!clickedLinkOrBtn) {
+                        let activeStyle = 'glassmorphic';
+                        if (table.classList.contains('style-original')) {
+                            activeStyle = 'original';
+                        } else if (table.classList.contains('style-hover-inline')) {
+                            activeStyle = 'hover-inline';
+                        }
+
+                        const wrapper = td.querySelector(`.action-style-${activeStyle}-wrapper`);
+                        if (wrapper) {
+                            const toggleBtn = wrapper.querySelector('[data-bs-toggle="dropdown"]');
+                            if (toggleBtn) {
+                                toggleBtn.click();
+                            } else {
+                                const viewBtn = wrapper.querySelector('.hover-action-btn.btn-view');
+                                if (viewBtn) viewBtn.click();
+                            }
+                        }
+                    }
+                    return;
+                }
+
+                const primaryLink = td.querySelector('a:not([onclick]):not(.text-muted)');
+                if (primaryLink) {
+                    if (!clickedLinkOrBtn) {
+                        if (primaryLink.target == '_blank') {
+                            window.open(primaryLink.href, '_blank');
+                        } else {
+                            primaryLink.click();
+                        }
+                    }
+                    return;
+                }
+            }
+
+            const row = e.target.closest('tr');
+            if (row && row.parentNode.tagName == 'TBODY') {
+                const cb = row.querySelector('input[name="tag_ids[]"]');
+                if (cb) {
+                    if (!isCheckbox) {
+                        cb.checked = !cb.checked;
+                    }
+
+                    if (e.shiftKey && lastChecked && lastChecked != cb) {
+                        window.getSelection().removeAllRanges();
+
+                        const checkboxes = Array.from(table.querySelectorAll('input[name="tag_ids[]"]'));
+                        const start = checkboxes.indexOf(cb);
+                        const end = checkboxes.indexOf(lastChecked);
+
+                        if (start != -1 && end != -1) {
+                            const rangeStart = Math.min(start, end);
+                            const rangeEnd = Math.max(start, end);
+
+                            for (let i = rangeStart; i <= rangeEnd; i++) {
+                                checkboxes[i].checked = cb.checked;
+                            }
+                        }
+                    }
+
+                    lastChecked = cb;
+                    cb.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+        });
+
+        if (selectAllTags) {
+            selectAllTags.addEventListener('change', function () {
+                table.querySelectorAll('input[name="tag_ids[]"]').forEach(cb => {
+                    cb.checked = selectAllTags.checked;
+                });
+                lastChecked = null;
+                toggleButton();
+            });
+        }
+
+        toggleButton();
+        updateSelectAllState();
+
+        const handleRenew = (e) => {
+            if (e) e.preventDefault();
+            const checked = [...document.querySelectorAll('input[name="tag_ids[]"]:checked')]
+                .map(cb => cb.value);
+            if (checked.length == 0) return;
+            const url = "{{ site_url('tags/renew') }}?tags=" + checked.join(',');
+            window.location.href = url;
+        };
+
+        const handleUpdateRule = (e) => {
+            if (e) e.preventDefault();
+            const checked = [...document.querySelectorAll('input[name="tag_ids[]"]:checked')]
+                .map(cb => cb.value);
+            if (checked.length == 0) return;
+            const url = "{{ site_url('tags/update-rule-request') }}?tags=" + checked.join(',');
+            window.location.href = url;
+        };
+
+        const handleVerify = (e) => {
+            if (e) e.preventDefault();
+            const checkedPending = [...document.querySelectorAll('input[name="tag_ids[]"]:checked')]
+                .filter(cb => {
+                    const status = cb.getAttribute('data-status');
+                    if (status == '4') return true;
+                    if (status == '9') {
+                        const ticketId = cb.getAttribute('data-ticket-id');
+                        const requestedDate = cb.getAttribute('data-requested-date');
+                        return ticketId && requestedDate;
+                    }
+                    return false;
+                })
+                .map(cb => cb.value);
+
+            if (checkedPending.length == 0) return;
+
+            const msg = `Have you verified the end date matches in AL for the selected ${checkedPending.length} tag(s)?`;
+            window.themeConfirm({
+                title: 'Verify Tags',
+                message: msg,
+                confirmText: 'Verify',
+                type: 'success'
+            }).then((confirmed) => {
+                if (confirmed) {
+                    const currentUrl = encodeURIComponent(window.location.href);
+                    const url = "{{ site_url('tags/verify-multiple') }}?tags=" + checkedPending.join(',') + "&return_url=" + currentUrl;
+                    showVerifyRteModal(url);
+                }
+            });
+        };
+
+        if (btnRenew) btnRenew.addEventListener('click', handleRenew);
+        if (btnUpdateRule) btnUpdateRule.addEventListener('click', handleUpdateRule);
+        if (btnVerify) btnVerify.addEventListener('click', handleVerify);
+
+        const floatingBtnRenew = document.getElementById('floatingBtnRenew');
+        const floatingBtnUpdateRule = document.getElementById('floatingBtnUpdateRule');
+        const floatingBtnVerify = document.getElementById('floatingBtnVerify');
+        if (floatingBtnRenew) floatingBtnRenew.addEventListener('click', handleRenew);
+        if (floatingBtnUpdateRule) floatingBtnUpdateRule.addEventListener('click', handleUpdateRule);
+        if (floatingBtnVerify) floatingBtnVerify.addEventListener('click', handleVerify);
+
+        const floatingBtnOpenLinks = document.getElementById('floatingBtnOpenLinks');
+        if (floatingBtnOpenLinks) {
+            floatingBtnOpenLinks.addEventListener('click', function (e) {
+                e.preventDefault();
+                const checked = document.querySelectorAll('input[name="tag_ids[]"]:checked');
+                const openedLinks = new Set();
+                let delay = 0;
+
+                checked.forEach(cb => {
+                    const link = cb.getAttribute('data-ref-link');
+                    if (link && !openedLinks.has(link)) {
+                        openedLinks.add(link);
+                        setTimeout(() => {
+                            window.open(link, '_blank');
+                        }, delay);
+                        delay += 150;
+                    }
+                });
+            });
+        }
+
+        const floatingBtnDeselect = document.getElementById('floatingBtnDeselect');
+        if (floatingBtnDeselect) {
+            floatingBtnDeselect.addEventListener('click', function (e) {
+                e.preventDefault();
+                table.querySelectorAll('input[name="tag_ids[]"]').forEach(cb => {
+                    cb.checked = false;
+                });
+                if (selectAllTags) {
+                    selectAllTags.checked = false;
+                    selectAllTags.indeterminate = false;
+                }
+                toggleButton();
+                updateSelectAllState();
+            });
+        }
+
+        window.copyTagName = function (text, el) {
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            temp.style.position = 'fixed';
+            temp.style.left = '-9999px';
+            document.body.appendChild(temp);
+            temp.focus();
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+
+            el.innerHTML = '<i class="bi bi-check-lg text-success fs-7"></i>';
+            setTimeout(() => {
+                el.innerHTML = '<i class="bi bi-copy text-secondary fs-7"></i>';
+            }, 1200);
+        };
+
+        const actionStyleControl = document.getElementById('actionStyleControl');
+        const tblTags = document.getElementById('tblTags');
+        if (actionStyleControl && tblTags) {
+            const savedStyle = localStorage.getItem('tag_action_style') || 'glassmorphic';
+            tblTags.classList.remove('style-original', 'style-glassmorphic', 'style-hover-inline');
+            tblTags.classList.add(`style-${savedStyle}`);
+
+            actionStyleControl.querySelectorAll('button').forEach(btn => {
+                if (btn.dataset.style == savedStyle) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            actionStyleControl.addEventListener('click', function (e) {
+                const btn = e.target.closest('button[data-style]');
+                if (!btn) return;
+
+                const selectedStyle = btn.dataset.style;
+                actionStyleControl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                tblTags.classList.remove('style-original', 'style-glassmorphic', 'style-hover-inline');
+                tblTags.classList.add(`style-${selectedStyle}`);
+
+                localStorage.setItem('tag_action_style', selectedStyle);
+            });
+        }
+
+        window.showVerifyRteModal = function (proceedUrl) {
+            const modalEl = document.getElementById('verifyRteModal');
+            if (!modalEl) return;
+            const modal = new bootstrap.Modal(modalEl);
+
+            const proceedBtn = document.getElementById('btnProceedVerify');
+            const newProceedBtn = proceedBtn.cloneNode(true);
+            proceedBtn.parentNode.replaceChild(newProceedBtn, proceedBtn);
+
+            newProceedBtn.addEventListener('click', function () {
+                modal.hide();
+                window.location.href = proceedUrl;
+            });
+
+            modal.show();
+        };
+
+        document.addEventListener('click', function (e) {
+            const verifyBtn = e.target.closest('.btn-individual-verify');
+            if (verifyBtn) {
+                e.preventDefault();
+                window.themeConfirm({
+                    title: 'Verify Tag',
+                    message: 'Have you verified the end date matches in AL?',
+                    confirmText: 'Verify',
+                    type: 'success'
+                }).then((confirmed) => {
+                    if (confirmed) {
+                        showVerifyRteModal(verifyBtn.getAttribute('href'));
+                    }
+                });
+            }
+        });
+
+        const copyBtn = document.getElementById('btnCopyVerifyMsg');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function () {
+                var content = document.getElementById('verifyRteContent');
+                var range = document.createRange();
+                range.selectNodeContents(content);
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                document.execCommand('copy');
+                sel.removeAllRanges();
+
+                var originalHtml = this.innerHTML;
+                this.innerHTML = '<i class="bi bi-check-lg"></i> Copied!';
+                this.classList.remove('apple-btn-secondary');
+                this.classList.add('btn', 'btn-success', 'text-white');
+
+                setTimeout(() => {
+                    this.innerHTML = originalHtml;
+                    this.classList.remove('btn', 'btn-success', 'text-white');
+                    this.classList.add('apple-btn-secondary');
+                }, 2000);
+            });
+        }
+
+        // ==========================================
+        // Export Excel Modal Management
+        // ==========================================
+        const exportModalEl = document.getElementById('exportExcelModal');
+        const exportForm = document.getElementById('exportExcelForm');
+        const exportCounter = document.getElementById('exportFieldsCounter');
+        const exportCheckboxes = document.querySelectorAll('.export-checkbox');
+        const btnSelectAll = document.getElementById('btnExportSelectAll');
+        const btnDeselectAll = document.getElementById('btnExportDeselectAll');
+        const btnResetDefault = document.getElementById('btnExportResetDefault');
+
+        const updateExportCounter = () => {
+            if (!exportCounter) return;
+            const checkedCount = document.querySelectorAll('.export-checkbox:checked').length;
+            const totalCount = exportCheckboxes.length;
+            exportCounter.textContent = `${checkedCount} of ${totalCount} fields selected`;
+
+            exportCheckboxes.forEach(cb => {
+                const card = cb.closest('.export-field-card');
+                if (card) {
+                    if (cb.checked) {
+                        card.classList.add('selected');
+                    } else {
+                        card.classList.remove('selected');
+                    }
+                }
+            });
+        };
+
+        if (exportCheckboxes.length > 0) {
+            exportCheckboxes.forEach(cb => {
+                cb.addEventListener('change', updateExportCounter);
+            });
+            updateExportCounter();
+        }
+
+        if (btnSelectAll) {
+            btnSelectAll.addEventListener('click', function () {
+                exportCheckboxes.forEach(cb => cb.checked = true);
+                updateExportCounter();
+            });
+        }
+
+        if (btnDeselectAll) {
+            btnDeselectAll.addEventListener('click', function () {
+                exportCheckboxes.forEach(cb => cb.checked = false);
+                updateExportCounter();
+            });
+        }
+
+        if (btnResetDefault) {
+            btnResetDefault.addEventListener('click', function () {
+                exportCheckboxes.forEach(cb => {
+                    cb.checked = (cb.getAttribute('data-is-default') === 'true');
+                });
+                updateExportCounter();
+            });
+        }
+
+        if (exportForm) {
+            exportForm.addEventListener('submit', function (e) {
+                const checkedCount = document.querySelectorAll('.export-checkbox:checked').length;
+                if (checkedCount === 0) {
+                    e.preventDefault();
+                    if (window.themeAlert) {
+                        window.themeAlert({
+                            title: 'No Fields Selected',
+                            message: 'Please select at least one field to export.',
+                            type: 'warning'
+                        });
+                    } else {
+                        alert('Please select at least one field to export.');
+                    }
+                    return false;
+                }
+
+                // Copy current search & filter params from the URL / filterForm into the export form
+                const container = document.getElementById('exportFilterParamsContainer');
+                if (container) {
+                    container.innerHTML = '';
+                    const filterForm = document.getElementById('filterForm');
+                    if (filterForm) {
+                        const formData = new FormData(filterForm);
+                        for (let [key, val] of formData.entries()) {
+                            if (val && val !== 'None' && val !== 'all') {
+                                const input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = key;
+                                input.value = val;
+                                container.appendChild(input);
+                            }
+                        }
+                    }
+                }
+
+                // Close modal after triggering download
+                setTimeout(() => {
+                    if (exportModalEl) {
+                        const bsModal = bootstrap.Modal.getInstance(exportModalEl);
+                        if (bsModal) bsModal.hide();
+                    }
+                }, 800);
+            });
+        }
+    });
+</script>
+{% endblock %}

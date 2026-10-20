@@ -1,0 +1,155 @@
+{% extends 'layouts/default.html' %}
+
+{% block title %}
+Property: Create
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <h2>Add a New Property</h2>
+</div>
+
+{% if error %}
+    <div class="alert alert-danger">
+        {{ error }}
+    </div>
+{% endif %}
+
+<form action="{{ site_url('properties/create') }}" method="post" enctype="multipart/form-data">
+    {{ csrf_field() }}
+
+    <div class="container">
+        <div class="card p-3 mt-3">
+            <div class="row mb-3">
+                <div class="col mb-2">
+                    <label for="name" class="form-label-xs">Name</label>
+                    <input type="text" name="name" id="name"
+                        class="form-control"
+                        value="{{ old('ticket_id', old['ticket_id'] or '') }}"
+                        required>
+                    <small class="form-label-xs text-muted">
+                        Property names should start with ZP6_XXX or ZS_XXX
+                    </small>
+                </div>
+
+                <div class="col mb-2">
+                    <label class="form-label-xs">Subsidiary</label>
+                    <select name="subsidiary_id" class="form-select searchable-select" required>
+                        {% for value, label in subsidiaries.items() %}
+                            <option value="{{ esc(value) }}"
+                                {{ ('selected' if old('subsidiary_id', property['subsidiary_id'] or '') == value else '') }}>
+                                {{ esc(label) }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col mb-2">
+                    <label class="form-label-xs">Country</label>
+                    <select name="country_id" class="form-select searchable-select" required>
+                        {% for value, label in countries.items() %}
+                            <option value="{{ esc(value) }}"
+                                {{ ('selected' if old('country_id', property['country_id'] or '') == value else '') }}>
+                                {{ esc(label) }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col mb-2">
+                    <label class="form-label-xs">Language</label>
+                    <select name="language_id" class="form-select searchable-select" required>
+                        {% for value, label in languages.items() %}
+                            <option value="{{ esc(value) }}"
+                                {{ ('selected' if old('language_id', property['language_id'] or '') == value else '') }}>
+                                {{ esc(label) }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col">
+                    <label class="form-label-xs">Is Active?</label>
+                    <select name="is_active" class="form-select" required>
+                        {% for value, label in Constants.IS_ACTIVE.items() %}
+                            <option value="{{ esc(value) }}"
+                                {{ ('selected' if old('is_active', property['is_active'] or 1) == value else '') }}>
+                                {{ esc(label) }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col">
+                    <label class="form-label-xs">Is EPP?</label>
+                    <select name="is_epp" class="form-select" required>
+                        {% for value, label in Constants.YES_NO.items() %}
+                            <option value="{{ esc(value) }}"
+                                {{ ('selected' if old('is_epp', property['is_epp'] or 0) == value else '') }}>
+                                {{ esc(label) }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col">
+                    <label class="form-label-xs">Is Shop?</label>
+                    <select name="is_shop" class="form-select" required>
+                        {% for value, label in Constants.YES_NO.items() %}
+                            <option value="{{ esc(value) }}"
+                                {{ ('selected' if old('is_shop', property['is_shop'] or 0) == value else '') }}>
+                                {{ esc(label) }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col">
+                    <label for="ref_link" class="form-label-xs">Launch Link</label>
+                    <input type="text" name="ref_link" id="ref_link"
+                        class="form-control"
+                        value="{{ old('ref_link', old['ref_link'] or '') }}"
+                        required>
+                    <small class="form-label-xs text-muted">
+                        https://[link_to_adobe_launch]
+                    </small>
+                </div>
+
+                <div class="col">
+                    <label for="website" class="form-label-xs">Website (Samsung)</label>
+                    <input type="text" name="website" id="website"
+                        class="form-control"
+                        value="{{ old('website', old['website'] or '') }}"
+                        required>
+                    <small class="form-label-xs text-muted">
+                        https://www.samsung.com/
+                    </small>
+                </div>
+            </div>
+
+            <input type="hidden" name="tag_id" value="{{ esc(tag['id'] or '') }}">
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ site_url('tags') }}" title="Cancel" class="apple-btn-secondary btn-sm">Cancel</a>
+                <button type="submit" class="apple-btn-primary btn-sm">Submit</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        $('.searchable-select').select2({
+            width: '100%',
+        });
+    });
+</script>
+
+{% endblock %}

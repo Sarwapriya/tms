@@ -1,0 +1,345 @@
+{% extends 'layouts/default.html' %}
+
+{% block title %}
+Vendors List
+{% endblock %}
+
+{% block content %}
+
+{{ csrf_field() }}
+
+<style>
+    /* Badge/Count Styles */
+    .premium-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .premium-count-badge:hover {
+        color: #ffffff !important;
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    /* Green (Default) bubble */
+    .premium-count-badge.bubble-green {
+        background: linear-gradient(135deg, var(--color-badge-green-bg) 0%, var(--color-badge-green-border) 100%);
+        color: var(--color-badge-green-text);
+        border: 1px solid var(--color-badge-green-border);
+        box-shadow: 0 2px 4px rgba(27, 94, 32, 0.15);
+    }
+    .premium-count-badge.bubble-green:hover {
+        background: linear-gradient(135deg, var(--color-badge-green-text) 0%, #123e15 100%);
+        box-shadow: 0 4px 10px rgba(27, 94, 32, 0.3);
+    }
+
+    /* Red (Expiring) bubble */
+    .premium-count-badge.bubble-red {
+        background: linear-gradient(135deg, var(--color-badge-danger-bg) 0%, var(--color-badge-danger-border) 100%);
+        color: var(--color-badge-danger-text);
+        border: 1px solid var(--color-badge-danger-border);
+        box-shadow: 0 2px 4px rgba(198, 40, 40, 0.15);
+    }
+    .premium-count-badge.bubble-red:hover {
+        background: linear-gradient(135deg, var(--color-badge-danger-text) 0%, #b71c1c 100%);
+        box-shadow: 0 4px 10px rgba(198, 40, 40, 0.3);
+    }
+
+    /* Amber (Pending) bubble */
+    .premium-count-badge.bubble-amber {
+        background: linear-gradient(135deg, var(--color-badge-warning-bg) 0%, var(--color-badge-warning-border) 100%);
+        color: var(--color-badge-warning-text);
+        border: 1px solid var(--color-badge-warning-border);
+        box-shadow: 0 2px 4px rgba(245, 127, 23, 0.15);
+    }
+    .premium-count-badge.bubble-amber:hover {
+        background: linear-gradient(135deg, var(--color-badge-warning-text) 0%, #e65100 100%);
+        box-shadow: 0 4px 10px rgba(245, 127, 23, 0.3);
+    }
+
+    .premium-count-empty {
+        color: #adb5bd;
+        font-weight: 300;
+    }
+
+    .vendor-name {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--color-text-base);
+    }
+
+    /* Sticky Table Header */
+    .apple-table-container .table-responsive {
+        max-height: 65vh;
+        overflow-y: auto;
+    }
+
+    #tblProperties thead th {
+        position: sticky;
+        top: 0;
+        background-color: var(--color-bg-base, #ffffff);
+        z-index: 10;
+        box-shadow: inset 0 -1px 0 var(--bs-border-color, rgba(0, 0, 0, 0.1));
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom flex-wrap gap-3">
+        <div>
+            <h2 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                <span>Vendors</span>
+                <span class="badge bg-secondary text-secondary" style="font-size: 0.85rem; font-weight: 600; padding: 0.35em 0.7em; border-radius: 20px;">
+                    {{ totalVendors }}
+                </span>
+            </h2>
+            <p class="text-secondary small mb-0">Overview of vendors and their tag count across different subsidiaries.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <div class="dropdown">
+                <button class="apple-btn-secondary btn-sm dropdown-toggle px-3 d-flex align-items-center gap-1"
+                    type="button" id="headerActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i> Actions
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="headerActionsDropdown"
+                    style="border-radius: 10px; border: 1px solid var(--color-border-input);">
+                    <li>
+                        <a class="dropdown-item py-2" href="{{ site_url('vendors/export?' ~ request.query_string.decode('utf-8')) }}"
+                            style="font-size: 0.9rem;">
+                            <i class="bi bi-file-earmark-arrow-down-fill text-secondary me-2"></i>Export as Excel
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- #region | SEARCH FILTER -->
+    <form method="get" class="m-0" id="filterForm">
+        <!-- Primary Search Bar -->
+        <div class="apple-control-bar mb-3">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Search Input -->
+                <div class="position-relative flex-grow-1" style="min-width: 250px;">
+                    <i class="bi bi-search text-muted position-absolute" style="left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.9rem;"></i>
+                    <input 
+                        type="text" 
+                        name="keyword" 
+                        class="form-control form-control-xs" 
+                        style="height: 36px; padding-left: 36px !important; border-radius: 20px;"
+                        placeholder="Search vendors..."
+                        value="{{ esc(filters.keyword or '') }}"
+                    >
+                </div>
+                
+                <!-- Toggle Filters Button -->
+                <button type="button" class="apple-btn-secondary btn-sm d-inline-flex align-items-center gap-2" 
+                        style="height: 36px; border-radius: 20px; font-weight: 500;" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#advancedFiltersCollapse" 
+                        aria-expanded="{{ ('true' if hasActiveFilters else 'false') }}" 
+                        aria-controls="advancedFiltersCollapse">
+                    <i class="bi bi-funnel"></i>
+                    <span>Filters</span>
+                    {% if activeFiltersCount > 0 %}
+                        <span class="badge bg-primary text-white rounded-circle px-1.5 py-0.5" style="font-size: 0.75rem; min-width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center;">
+                            {{ activeFiltersCount }}
+                        </span>
+                    {% endif %}
+                </button>
+
+                <!-- Action Buttons -->
+                <button type="submit" class="apple-btn-primary btn-sm px-4" style="height: 36px; border-radius: 20px;">Apply</button>
+                {% if request.args %}
+                    <a href="{{ site_url('vendors') }}" class="apple-btn-secondary btn-sm px-4 text-decoration-none d-inline-flex align-items-center justify-content-center" style="height: 36px; border-radius: 20px;">Clear</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Collapsible Advanced Filters Panel -->
+        <div class="collapse {{ ('show' if hasActiveFilters else '') }} mb-4" id="advancedFiltersCollapse">
+            <div class="apple-card" style="background-color: var(--color-bg-base); border: 1px solid rgba(0, 0, 0, 0.05); box-shadow: none; padding: 20px;">
+                <h5 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="bi bi-sliders text-primary"></i> Advanced Filters
+                </h5>
+                <div class="row g-3">
+                    <!-- Vendor Option -->
+                    <div class="col-md-6 col-lg-4">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Vendor</label>
+                        <select name="id" class="form-select form-select-xs searchable-select">
+                            <option value="">All Vendors</option>
+                            {% for value, label in vendorOptions.items() %}
+                                <option value="{{ esc(value) }}"
+                                    {{ ('selected' if old('id', filters.id|string) == value|string else '') }}>
+                                    {{ esc(label) }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" name="sort_by" value="{{ esc(filters.sort_by or '') }}">
+        <input type="hidden" name="sort_dir" value="{{ esc(filters.sort_dir or 'asc') }}">
+    </form>
+
+    <!-- Active Filters Pills -->
+    {% if activeFiltersCount > 0 %}
+        <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+            <span class="text-secondary small fw-medium">Active Filters:</span>
+            {% if request.args.get('keyword') %}
+                <a href="{{ remove_filter_url('keyword') }}" class="filter-pill badge bg-secondary text-decoration-none d-inline-flex align-items-center gap-1.5 py-1.5 px-2.5 rounded-pill border border-secondary" style="font-size: 0.8rem; font-weight: 500;">
+                    <span>Keyword: {{ request.args.get('keyword') }}</span>
+                    <i class="bi bi-x-circle-fill text-muted" style="font-size: 0.75rem;"></i>
+                </a>
+            {% endif %}
+            {% for key in advancedFilterKeys %}
+                {% set val = request.args.get(key) %}
+                {% if val is not none and val != '' %}
+                    {% if key == 'id' %}
+                        {% set label = 'Vendor: ' ~ vendorOptions.get(val|int, val) %}
+                    {% else %}
+                        {% set label = key ~ ': ' ~ val %}
+                    {% endif %}
+                    <a href="{{ remove_filter_url(key) }}" class="filter-pill badge bg-secondary text-decoration-none d-inline-flex align-items-center gap-1.5 py-1.5 px-2.5 rounded-pill border border-secondary" style="font-size: 0.8rem; font-weight: 500;">
+                        <span>{{ label }}</span>
+                        <i class="bi bi-x-circle-fill text-muted" style="font-size: 0.75rem;"></i>
+                    </a>
+                {% endif %}
+            {% endfor %}
+            <a href="{{ site_url('vendors') }}" class="small text-muted text-decoration-none ms-2">Clear all</a>
+        </div>
+    {% endif %}
+    <!-- #endregion -->
+
+    <!-- Legend -->
+    <div class="d-flex flex-wrap gap-3 align-items-center mb-3 px-1" style="font-size: 0.8rem; font-weight: 500;">
+        <span class="text-secondary text-uppercase fw-bold" style="letter-spacing: 0.5px; font-size: 0.65rem; margin-right: 4px;">Legend:</span>
+        <span class="d-flex align-items-center gap-2">
+            <span class="premium-count-badge bubble-green" style="width: 14px; height: 14px; font-size: 0; pointer-events: none; box-shadow: none;"></span>
+            <span class="text-secondary">Active / Normal</span>
+        </span>
+        <span class="d-flex align-items-center gap-2">
+            <span class="premium-count-badge bubble-amber" style="width: 14px; height: 14px; font-size: 0; pointer-events: none; box-shadow: none;"></span>
+            <span class="text-secondary">Pending Action</span>
+        </span>
+        <span class="d-flex align-items-center gap-2">
+            <span class="premium-count-badge bubble-red" style="width: 14px; height: 14px; font-size: 0; pointer-events: none; box-shadow: none;"></span>
+            <span class="text-secondary">Expiring Soon (&lt; 15 days)</span>
+        </span>
+    </div>
+
+    <!-- #region | PROPERTIES TABLE -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="text-secondary small fw-medium">
+            Showing {{ count(vendors) }} of {{ totalVendors }} results
+        </span>
+    </div>
+
+    <div class="apple-table-container">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tblProperties">
+                <thead>
+                    <tr>
+                        <th class="text-center" style="width: 60px;">
+                            <a href="{{ getSortUrl('id', filters.sort_by, filters.sort_dir) }}" class="text-decoration-none text-dark d-inline-flex align-items-center">
+                                # {{ getSortIcon('id', filters.sort_by, filters.sort_dir) }}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ getSortUrl('name', filters.sort_by, filters.sort_dir) }}" class="text-decoration-none text-dark d-inline-flex align-items-center">
+                                Vendor {{ getSortIcon('name', filters.sort_by, filters.sort_dir) }}
+                            </a>
+                        </th>
+                        <th class="text-center text-dark">{{ Constants.SUBSIDIARIES[Constants.SUBSIDIARY_SGE] }}</th>
+                        <th class="text-center text-dark">{{ Constants.SUBSIDIARIES[Constants.SUBSIDIARY_SESAR] }}</th>
+                        <th class="text-center text-dark">{{ Constants.SUBSIDIARIES[Constants.SUBSIDIARY_SETK] }}</th>
+                        <th class="text-center text-dark">{{ Constants.SUBSIDIARIES[Constants.SUBSIDIARY_SEIL] }}</th>
+                        <th class="text-center text-dark">{{ Constants.SUBSIDIARIES[Constants.SUBSIDIARY_SEILPS] }}</th>
+                        <th class="text-center text-dark">{{ Constants.SUBSIDIARIES[Constants.SUBSIDIARY_SELV] }}</th>
+                        <th class="text-center text-dark">{{ Constants.SUBSIDIARIES[Constants.SUBSIDIARY_SEEG] }}</th>
+                        <th class="text-center text-dark">{{ Constants.SUBSIDIARIES[Constants.SUBSIDIARY_SEMAG] }}</th>
+                        <th class="text-center text-dark">{{ Constants.SUBSIDIARIES[Constants.SUBSIDIARY_SEPAK] }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if empty(vendors) %}
+                        <tr>
+                            <td colspan="11" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-2 mb-2 d-block text-secondary" style="opacity: 0.5;"></i>
+                                <span class="fw-semibold">No vendors found</span>
+                                <p class="small text-secondary mb-0">Try adjusting your filters or search keywords.</p>
+                            </td>
+                        </tr>
+                    {% else %}
+                        {% for vendor in vendors %}
+                            <tr>
+                                <td class="text-center text-muted fw-medium">#{{ vendor.id }}</td>
+                                <td class="vendor-name fw-medium">{{ esc(vendor.name) }}</td>
+
+                                {% for id, sub in Constants.SUBSIDIARIES.items() %}
+                                    {% set cell = vendor_matrix.get(vendor.id, {}).get(id) %}
+                                    <td class="text-center">
+                                        {% if cell and cell.count > 0 %}
+                                            <a href="{{ site_url('vendors/view/' ~ vendor.id ~ '?subsidiary_id=' ~ id) }}" class="premium-count-badge {{ cell.badge_class }}">
+                                                {{ cell.count }}
+                                            </a>
+                                        {% else %}
+                                            <span class="premium-count-empty">-</span>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        {% if pagination and pagination.pages > 1 %}
+            <div class="mt-4 d-flex justify-content-center">
+                <nav aria-label="Page navigation" class="apple-pagination-container">
+                    <ul class="apple-pagination">
+                        {% if pagination.has_prev %}
+                            <li><a href="{{ url_for_page(1) }}"><span>&laquo;</span></a></li>
+                            <li><a href="{{ url_for_page(pagination.prev_num) }}"><span>&lsaquo;</span></a></li>
+                        {% endif %}
+                        {% for p in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=3) %}
+                            {% if p %}
+                                <li class="{{ 'active' if p == pagination.page else '' }}">
+                                    <a href="{{ url_for_page(p) }}">{{ p }}</a>
+                                </li>
+                            {% else %}
+                                <li class="disabled"><span>&hellip;</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if pagination.has_next %}
+                            <li><a href="{{ url_for_page(pagination.next_num) }}"><span>&rsaquo;</span></a></li>
+                            <li><a href="{{ url_for_page(pagination.pages) }}"><span>&raquo;</span></a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        {% endif %}
+    </div>
+    <!-- #endregion -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    $('.searchable-select').select2({
+        width: '100%',
+        placeholder: "All Vendors",
+        allowClear: true
+    });
+});
+</script>
+{% endblock %}

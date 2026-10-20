@@ -1,0 +1,74 @@
+{% extends 'layouts/default.html' %}
+
+{% block title %}
+Renewal Justification : Update
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Page Header -->
+    <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+        <a href="{{ site_url('tags/renewal-justifications') }}" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; padding: 0;" title="Back to Justifications">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </a>
+        <div>
+            <h2 class="mb-0 fw-bold">Update Renewal Justification</h2>
+            <p class="text-secondary small mb-0">Tag: {{ tag.name if tag else 'Unknown' }}</p>
+        </div>
+    </div>
+
+    <form action="{{ site_url('tags/renewal-justifications/update/' ~ justification.id) }}" method="post" style="max-width: 600px;">
+        {{ csrf_field() }}
+
+        <div class="apple-card mb-4" style="background-color: var(--color-bg-base); border: 1px solid rgba(0, 0, 0, 0.05); box-shadow: none; border-radius: 16px; padding: 24px;">
+            <h5 class="mb-4 text-primary d-flex align-items-center gap-2 fw-bold">
+                <i class="bi bi-file-earmark-check-fill"></i>
+                <span>Justification Information</span>
+            </h5>
+            
+            <div class="row g-3">
+                <!-- Tag Name (read-only) -->
+                <div class="col-12">
+                    <label class="form-label-sm fw-semibold text-secondary mb-1">Tag Name</label>
+                    <input type="text" class="form-control form-control-xs bg-light" value="{{ tag.name if tag else '' }}" readonly style="height: 38px; border-radius: 8px;">
+                </div>
+
+                <!-- Renew -->
+                <div class="col-md-6">
+                    <label for="renew" class="form-label-sm fw-semibold text-secondary mb-1">Renew (Y/N)</label>
+                    <select name="renew" id="renew" class="form-select form-select-xs" required style="height: 38px; border-radius: 8px;">
+                        <option value="Y" {% if justification.renew in ['Y', 'Yes'] %}selected{% endif %}>Y (Yes)</option>
+                        <option value="N" {% if justification.renew in ['N', 'No'] %}selected{% endif %}>N (No)</option>
+                    </select>
+                </div>
+
+                <!-- Duration -->
+                <div class="col-md-6">
+                    <label for="duration" class="form-label-sm fw-semibold text-secondary mb-1">Duration of Usage</label>
+                    <input type="text" name="duration" id="duration"
+                        class="form-control form-control-xs"
+                        value="{{ justification.duration or '' }}"
+                        placeholder="e.g. 1 Year"
+                        style="height: 38px; border-radius: 8px;">
+                </div>
+
+                <!-- Justification -->
+                <div class="col-12">
+                    <label for="justification" class="form-label-sm fw-semibold text-secondary mb-1">Renewal Justification</label>
+                    <textarea name="justification" id="justification"
+                        class="form-control form-control-xs"
+                        rows="4"
+                        placeholder="Enter the justification..."
+                        style="border-radius: 8px;">{{ justification.justification or '' }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+            <a href="{{ site_url('tags/renewal-justifications') }}" class="apple-btn-secondary px-4 text-decoration-none d-flex align-items-center justify-content-center" style="height: 38px; border-radius: 20px;">Cancel</a>
+            <button type="submit" class="apple-btn-primary px-4" style="height: 38px; border-radius: 20px;">Update Justification</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,396 @@
+{% extends 'layouts/default.html' %}
+
+{% block title %}
+User Profile
+{% endblock %}
+
+{% block content %}
+
+
+<style>
+    /* Premium Profile Design Aesthetics */
+    .profile-container {
+        max-width: 950px;
+        margin: 0 auto;
+    }
+
+    .apple-profile-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .avatar-wrapper {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        margin: 0 auto 20px;
+    }
+
+    .avatar-circle {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary, #007aff) 0%, #5856d6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(88, 86, 214, 0.3);
+        border: 4px solid #ffffff;
+        transition: transform 0.3s ease;
+    }
+
+    .avatar-circle:hover {
+        transform: rotate(5deg) scale(1.03);
+    }
+
+    .photo-edit-badge {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 30px;
+        height: 30px;
+        background: var(--color-primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        transition: all 0.2s ease;
+        z-index: 10;
+    }
+
+    .photo-edit-badge:hover {
+        transform: scale(1.1);
+        background-color: var(--color-primary-hover) !important;
+    }
+
+    .photo-remove-badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 30px;
+        height: 30px;
+        background: var(--color-badge-danger-bg, #FFEBEE);
+        color: var(--color-badge-danger-text, #C62828);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        transition: all 0.2s ease;
+        z-index: 10;
+    }
+
+    .photo-remove-badge:hover {
+        transform: scale(1.1);
+        background-color: var(--color-badge-danger-text, #C62828) !important;
+        color: white !important;
+    }
+
+    .profile-header-info {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .profile-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        color: var(--color-text-primary, #1d1d1f);
+        margin-bottom: 6px;
+    }
+
+    .profile-username {
+        font-family: var(--font-monospace, monospace);
+        font-size: 0.9rem;
+        color: var(--color-text-secondary, #86868b);
+        background: rgba(0, 0, 0, 0.04);
+        padding: 3px 10px;
+        border-radius: 6px;
+        display: inline-block;
+        margin-bottom: 12px;
+    }
+
+    .badge-pill-custom {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 5px 12px;
+        border-radius: 50px;
+        letter-spacing: 0.1px;
+    }
+
+    .section-title {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: var(--color-text-primary, #1d1d1f);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .input-group-custom {
+        margin-bottom: 18px;
+    }
+
+    .label-custom {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--color-text-secondary, #86868b);
+        margin-bottom: 6px;
+        display: block;
+    }
+
+    .form-control-custom {
+        border-radius: 10px;
+        border: 1px solid var(--color-border-input, #d2d2d7);
+        padding: 9px 14px;
+        font-size: 0.9rem;
+        background-color: rgba(255, 255, 255, 0.95);
+        transition: all 0.2s ease;
+    }
+
+    .form-control-custom:focus {
+        border-color: var(--color-primary, #007aff);
+        box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
+        outline: none;
+    }
+
+    .form-control-readonly {
+        background-color: rgba(0, 0, 0, 0.03);
+        color: var(--color-text-secondary, #86868b);
+        border-color: rgba(0, 0, 0, 0.05);
+        cursor: not-allowed;
+    }
+
+    .btn-save-profile {
+        padding: 10px 24px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-save-profile:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+    }
+</style>
+
+<div class="container-fluid px-0 profile-container">
+    <!-- Page Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="mb-0 fw-bold">My Account</h2>
+            <p class="text-secondary small mb-0">View or update your personal account profile details and login password.</p>
+        </div>
+        <div>
+            <a href="{{ site_url('dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-3 px-3 py-1.5" style="font-size: 0.8rem; font-weight: 500;">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Wrapped everything in a single form to handle text fields and file upload jointly -->
+    <form action="{{ site_url('profile/update') }}" method="post" enctype="multipart/form-data">
+        {{ csrf_field() }}
+
+        <div class="row g-4">
+            <!-- Profile Overview Card (Left side or top) -->
+            <div class="col-lg-4">
+                <div class="apple-profile-card text-center h-100 d-flex flex-column justify-content-center">
+                        <div class="avatar-wrapper">
+                            {% if not empty(user['profile_photo']) %}
+                                <div class="avatar-circle" style="background: url('{{ base_url('uploads/profile_photos/' ~ esc(user['profile_photo'])) }}') no-repeat center center; background-size: cover;"></div>
+                            {% else %}
+                                <div class="avatar-circle">
+                                    {{ esc(substr(user['first_name'], 0, 1) ~ substr(user['last_name'], 0, 1)) }}
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Pencil edit button overlay at bottom-right of avatar -->
+                            <label for="profile_photo" class="photo-edit-badge" title="Change Profile Photo">
+                                <i class="bi bi-pencil-fill" style="font-size: 0.85rem; line-height: 1;"></i>
+                            </label>
+                            <input type="file" name="profile_photo" id="profile_photo" class="d-none" accept="image/jpg,image/jpeg,image/png,image/gif,image/webp" onchange="previewPhoto(this)">
+
+                            <!-- Trash remove button overlay at top-right of avatar -->
+                            <button type="button" class="photo-remove-badge border-0" id="photo-remove-btn" title="Remove Profile Photo" style="{{ 'display: none;' if not user['profile_photo'] else '' }}" onclick="triggerRemovePhoto()">
+                                <i class="bi bi-trash-fill" style="font-size: 0.85rem; line-height: 1;"></i>
+                            </button>
+                            
+                            <input type="hidden" name="remove_photo" id="remove_photo_flag" value="0">
+                        </div>
+
+                    <div class="profile-header-info">
+                        <h4 class="profile-name">{{ esc(user['first_name'] ~ ' ' ~ user['last_name']) }}</h4>
+                        <span class="profile-username">@{{ esc(user['username']) }}</span>
+                        
+                        <div class="mt-2">
+                            
+                            <span class="badge badge-pill-custom {{ badgeClass }} me-1">
+                                <i class="bi bi-shield-lock-fill me-1"></i>{{ esc(roleName) }}
+                            </span>
+                            
+                            {% if user['is_active'] == 1 %}
+                                <span class="badge badge-pill-custom bg-success-subtle text-success">
+                                    <i class="bi bi-patch-check-fill me-1"></i>Active
+                                </span>
+                            {% else %}
+                                <span class="badge badge-pill-custom bg-light text-secondary">
+                                    <i class="bi bi-slash-circle me-1"></i>Inactive
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="border-top pt-3 text-start small text-secondary">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>User ID:</span>
+                            <span class="fw-semibold text-dark">#{{ user['id'] }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Created on:</span>
+                            <span class="fw-semibold text-dark">{{ esc(user['created_at']) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Forms Form (Right side or main) -->
+            <div class="col-lg-8">
+                <div class="apple-profile-card">
+                    <!-- Personal Information Group -->
+                    <div class="section-title">
+                        <i class="bi bi-person-fill text-primary"></i>
+                        <span>Personal Details</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6 input-group-custom">
+                            <label class="label-custom" for="first_name">First Name</label>
+                            <input type="text" name="first_name" id="first_name" class="form-control form-control-custom w-100" value="{{ esc(user['first_name']) }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 input-group-custom">
+                            <label class="label-custom" for="last_name">Last Name</label>
+                            <input type="text" name="last_name" id="last_name" class="form-control form-control-custom w-100" value="{{ esc(user['last_name']) }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6 input-group-custom">
+                            <label class="label-custom" for="username">Username</label>
+                            <input type="text" name="username" id="username" class="form-control form-control-custom w-100" value="{{ esc(user['username']) }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 input-group-custom">
+                            <label class="label-custom">Account Type (Read-only)</label>
+                            <input type="text" class="form-control form-control-custom form-control-readonly w-100" value="{{ esc(Constants.ACC_TYPE[user['account_type']] or 'User') }}" readonly>
+                        </div>
+                    </div>
+
+                    <!-- Change Password Group -->
+                    <div class="section-title mt-4">
+                        <i class="bi bi-key-fill text-primary"></i>
+                        <span>Change Password</span>
+                    </div>
+                    <p class="text-secondary small mb-3">To update your password, fill in the fields below. Otherwise, leave them blank.</p>
+                    
+                    <div class="input-group-custom">
+                        <label class="label-custom" for="current_password">Current Password</label>
+                        <input type="password" name="current_password" id="current_password" class="form-control form-control-custom w-100" placeholder="••••••••">
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6 input-group-custom">
+                            <label class="label-custom" for="new_password">New Password</label>
+                            <input type="password" name="new_password" id="new_password" class="form-control form-control-custom w-100" placeholder="••••••••">
+                        </div>
+                        
+                        <div class="col-md-6 input-group-custom">
+                            <label class="label-custom" for="confirm_password">Confirm New Password</label>
+                            <input type="password" name="confirm_password" id="confirm_password" class="form-control form-control-custom w-100" placeholder="••••••••">
+                        </div>
+                    </div>
+
+                    <!-- Save profile button -->
+                    <div class="text-end border-top pt-3 mt-4">
+                        <button type="submit" class="apple-btn-primary btn-save-profile">
+                            <i class="bi bi-check-circle-fill"></i> Save Profile Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function previewPhoto(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const avatarCircle = document.querySelector('.avatar-circle');
+                avatarCircle.innerHTML = '';
+                avatarCircle.style.background = `url(${e.target.result}) no-repeat center center`;
+                avatarCircle.style.backgroundSize = 'cover';
+                
+                // Show remove button and reset flag
+                document.getElementById('photo-remove-btn').style.display = 'flex';
+                document.getElementById('remove_photo_flag').value = "0";
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function triggerRemovePhoto() {
+        // Clear file input so no new image gets uploaded
+        document.getElementById('profile_photo').value = "";
+        
+        // Set remove flag to 1
+        document.getElementById('remove_photo_flag').value = "1";
+        
+        // Hide remove button
+        document.getElementById('photo-remove-btn').style.display = 'none';
+        
+        // Revert avatar circle to show initials
+        const avatarCircle = document.querySelector('.avatar-circle');
+        avatarCircle.style.background = '';
+        
+        // Calculate initials from input fields
+        const firstName = document.getElementById('first_name').value.trim();
+        const lastName = document.getElementById('last_name').value.trim();
+        const initials = ((firstName ? firstName.substring(0, 1) : '') + (lastName ? lastName.substring(0, 1) : '')).toUpperCase();
+        
+        avatarCircle.innerHTML = initials || '?';
+        
+        // Re-apply initials styling
+        avatarCircle.style.background = 'linear-gradient(135deg, var(--color-primary, #007aff) 0%, #5856d6 100%)';
+    }
+</script>
+{% endblock %}

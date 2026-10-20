@@ -1,0 +1,66 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Bulk Verify Tags | Martech TMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+    <div>
+        <h3 class="fw-bold mb-1">Batch Tag Verification</h3>
+        <p class="text-muted small mb-0">Select multiple tags currently in 'Pending Verification' to approve and enable in bulk.</p>
+    </div>
+    <a href="{{ url_for('tags.index') }}" class="btn btn-light btn-sm border">Back to Inventory</a>
+</div>
+
+{% if tags %}
+<form method="POST" action="{{ url_for('tags.verify_multiple') }}">
+    <div class="table-responsive rounded-3 border mb-4">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">
+                        <input type="checkbox" id="checkAll" class="form-check-input" onclick="toggleSelectAll(this)">
+                    </th>
+                    <th>Tag Name</th>
+                    <th>Property</th>
+                    <th>Vendor</th>
+                    <th>AL End Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tag in tags %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="tag_ids" value="{{ tag.id }}" class="form-check-input tag-checkbox">
+                    </td>
+                    <td class="fw-semibold text-dark">{{ tag.name }}</td>
+                    <td class="small">{{ tag.property.name if tag.property else '-' }}</td>
+                    <td class="small">{{ tag.vendor.name if tag.vendor else '-' }}</td>
+                    <td class="small font-monospace">{{ tag.al_end_date|format_date or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="text-muted small">Select the checkboxes above to verify simultaneously.</span>
+        <button type="submit" class="btn btn-warning px-4 text-dark fw-bold">
+            <i class="bi bi-shield-check me-1"></i> Verify Selected Tags
+        </button>
+    </div>
+</form>
+
+<script>
+    function toggleSelectAll(master) {
+        document.querySelectorAll('.tag-checkbox').forEach(cb => cb.checked = master.checked);
+    }
+</script>
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-check-circle-fill text-success fs-1 d-block mb-3"></i>
+    <h5>All Tags Verified!</h5>
+    <p class="text-muted small">There are currently no tags awaiting verification.</p>
+    <a href="{{ url_for('tags.index') }}" class="btn btn-primary btn-sm">Return to Tag Inventory</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,534 @@
+{% extends 'layouts/default.html' %}
+
+{% block title %}
+Tag Request: Create
+{% endblock %}
+
+{% block content %}
+
+{% if error %}
+    <div class="container alert alert-danger">
+        {{ error }}
+    </div>
+{% endif %}
+
+{% if empty(tag_ids) %}
+    <!-- #region | PART 1 - REQUEST CREATION -->
+     <div class="container">
+        <h2>Add a Tag Request (From Excel)</h2>
+        <div class="alert alert-info">
+            Data has been extracted from the uploaded Excel file. Please review and complete the form before proceeding.
+            {% if not empty(extracted_data) %}
+            <ul class="mb-0 mt-2">
+                <li><strong>Extracted Vendor:</strong> {{ esc(extracted_data['vendor_name']) }}</li>
+                <li><strong>Target Property/Sites:</strong> {{ esc(extracted_data['target_properties']) }}</li>
+                <li><strong>Extracted Tag Script:</strong> {{ esc(extracted_data['tag_script']) }}</li>
+            </ul>
+            {% endif %}
+        </div>
+    </div>
+    <form action="{{ site_url('tag-requests/create') }}" method="post">
+        {{ csrf_field() }}
+        {% if not empty(extracted_data) %}
+            <input type="hidden" name="excel_file_path" value="{{ esc(extracted_data['excel_file_path'] or '') }}">
+            <input type="hidden" name="excel_file_name" value="{{ esc(extracted_data['excel_file_name'] or '') }}">
+        {% endif %}
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+            <div class="card p-3 mt-3">
+                <div class="row mb-2">
+                    <div class="col mb-2">
+                        <label class="form-label-xs text-primary">Property</label>
+                        <select name="property_id" class="form-select searchable-select" required>
+                            {% for prop in propertiesList %}
+                                <option value="{{ esc(prop['id']) }}"
+                                    data-is-shop="{{ ('Shop' if prop['is_shop'] == Constants.YES else 'AEM') }}"
+                                    {{ ('selected' if old('property_id', requests['property_id'] or (extracted_data['property_id'] or '')) == prop['id'] else '') }}>
+                                    {{ esc(prop['name']) }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col mb-2">
+                        <label class="form-label-xs text-primary">Request Type</label>
+                        <select name="type" class="form-select" required>
+                            {% for value, label in Constants.REQUEST_TYPES.items() %}
+                                <option value="{{ esc(value) }}"
+                                    {{ ('selected' if old('type', requests['type'] or 1) == value else '') }}>
+                                    {{ esc(label ~ ' Request') }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col mb-2">
+                        <label class="form-label-xs text-primary" for="al_end_date">Launch Expiry Date</label>
+                        <input type="date"
+                            name="al_end_date"
+                            id="al_end_date"
+                            class="form-control"
+                            value="{{ esc(old('al_end_date', request['al_end_date'] or '')) }}"
+                            required>
+                    </div>
+                </div>
+                
+                <div class="row mb-2">
+                    <div class="col-md-12">
+                        <label class="form-label-xs text-primary">Tag(s)</label>
+                        <select name="tags[]" class="form-select advanced-select" multiple required>
+                        </select>
+                        <small class="form-label-xs text-muted">
+                            Tag names should start with LC-
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- #region | REQUESTER DETAILS -->
+            <h5 class="mt-4">Requester Details</h5>
+            <div class="card p-3">
+                <div class="row mb-2">
+                    <div class="col">
+                        <label class="form-label-xs text-primary">Organization</label>
+                        <select name="requester_organization" class="form-select advanced-select">
+                            {% for value, label in organizations.items() %}
+                                <option value="{{ esc(value) }}"
+                                    {{ ('selected' if old('requester_organization', tag['requester_organization'] or '') == value else '') }}>
+                                    {{ esc(label) }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col">
+                        <label for="requester_name" class="form-label-xs text-primary">Name</label>
+                        <input type="text" name="requester_name" id="requester_name"
+                            class="form-control"
+                            value="{{ old('requester_name', old['requester_name'] or (extracted_data['requester_name'] or '')) }}">
+                    </div>
+
+                    <div class="col">
+                        <label for="requester_email" class="form-label-xs text-primary">Email Address</label>
+                        <input type="text" name="requester_email" id="requester_email"
+                            class="form-control"
+                            value="{{ old('requester_email', old['requester_email'] or (extracted_data['requester_email'] or '')) }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <a href="{{ site_url('tag-requests') }}" title="Cancel" class="btn btn-secondary btn-sm">Cancel</a>
+                <button type="submit" class="btn btn-primary btn-sm">Proceed</button>
+            </div>
+            <!-- #endregion -->
+                </div>
+                
+                <div class="col-lg-4 mt-3">
+                    <div class="card p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0 text-primary d-flex align-items-center gap-2" style="font-size: 1rem;">
+                                <i class="bi bi-key-fill"></i>
+                                <span>UUID Generator</span>
+                            </h5>
+                            <a href="javascript:void(0)" onclick="generateUUID()" class="text-secondary" title="Regenerate UUID">
+                                <i class="bi bi-arrow-clockwise fs-5"></i>
+                            </a>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="text" id="uuid_display" class="form-control form-control-sm text-center fw-mono bg-light" readonly value="">
+                            <a href="javascript:void(0)" onclick="copyUUID()" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" title="Copy UUID" style="width: 32px; height: 32px;">
+                                <i class="bi bi-copy"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="card p-3">
+                        <h5 class="mb-3 text-primary d-flex align-items-center gap-2">
+                            <i class="bi bi-tags-fill"></i>
+                            <span>Related Tag(s) on Vendor</span>
+                        </h5>
+                        <div id="related_tags_container">
+                            <p class="text-muted small mb-0">Select a tag to see other tags with the same vendor.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    <!-- #endregion -->
+
+{% elif request_type == Constants.JIRA_TYPE_NEW_TAG %}
+<!-- region | PART 2 - NEW TAG REQUEST CONFIRMATION -->
+<form action="{{ site_url('tag-requests/create/confirm') }}" method="post">
+    <div class="container">
+        <h4>{{ Constants.JIRA_TICKET_TYPES[request_type] }} Request</h4>
+        <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+            <h4 class="text-primary d-flex align-items-center gap-2">
+                <span id="jiraTitle">{{ esc(jiraTitle) }}</span>
+                <a href="javascript:void(0)" onclick="copyJiraTitle()">
+                    <i class="bi bi-copy text-primary fs-5"></i>
+                </a>
+                <span id="copyStatus" style="opacity:0; transition: opacity .6s; font-size:10px; color:green;">
+                    Copied!
+                </span>
+            </h4>
+
+            <div class="d-flex justify-content-end">
+                <div>
+                    <a href="{{ site_url('tag-requests') }}" title="Cancel" class="apple-btn-secondary btn-sm">Cancel</a>
+                    <button type="submit" 
+                        class="apple-btn-primary btn-sm">
+                        Confirm Request
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <textarea id="details"></textarea>
+        <div class="d-flex justify-content-between align-items-center mt-2 gap-2">
+            <div class="d-flex align-items-start align-items-center gap-2">
+                <div>
+                    <input type="hidden" name="request_id" value="{{ request_id }}">
+                    <input type="text" name="ticket_id" id="ticket_id"
+                        class="form-control"
+                        value="{{ old('ticket_id', old['ticket_id'] or '') }}"
+                        required>
+                </div>
+                <a href="{{ Constants.JIRA_CREATE_ISSUE }}" title="Create Issue in JIRA" class="apple-btn-secondary btn-sm" target="_blank">
+                    Create JIRA Ticket
+                </a>
+            </div>
+
+            <div>
+                <span id="copyDetailsStatus" style="opacity:0; transition: opacity .6s; font-size:10px; color:green;">
+                    Copied!
+                </span>
+
+                <a href="javascript:void(0)" onclick="copyDetails()">
+                    <i class="bi bi-copy text-primary fs-5"></i>
+                </a>
+            </div>
+        </div>
+
+        <small class="form-label-xs text-muted">
+            JIRA ticket ID, GTA-XXXXX
+        </small>
+</form>
+<!-- #endregion -->
+
+{% elif request_type == Constants.JIRA_TYPE_NEW_RULE %}
+<!-- region | PART 3 - NEW RULE REQUEST CONFIRMATION -->
+<form action="{{ actionLink }}" method="get">
+    <div class="container mb-5">
+        {% if ticket_id %}
+            <h6 class="text-danger"><b>{{ esc(ticket_id) }}</b></h6>
+        {% endif %}
+
+        <h4>{{ Constants.JIRA_TICKET_TYPES[request_type] }} Request</h4>
+        <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+            <h4 class="text-primary d-flex align-items-center gap-2">
+                <span id="jiraTitle">{{ esc(jiraTitle) }}</span>
+                <a href="javascript:void(0)" onclick="copyJiraTitle()">
+                    <i class="bi bi-copy text-primary fs-5"></i>
+                </a>
+                <span id="copyStatus" style="opacity:0; transition: opacity .6s; font-size:10px; color:green;">
+                Copied!
+            </span>
+            </h4>
+
+            <div class="d-flex justify-content-end">
+                <div>
+                    <a href="{{ site_url('tag-requests') }}" title="Cancel" class="btn btn-secondary btn-sm">Cancel</a>
+                    <button type="submit"
+                            class="btn btn-success btn-sm">
+                        Confirm Request
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <textarea id="details"></textarea>
+        <div class="d-flex justify-content-between align-items-center mt-2 gap-2">
+
+            {% if ticket_id == null %}
+                <div class="d-flex align-items-start align-items-center gap-2">
+                    <div>
+                        <input type="hidden" name="request_id" value="{{ request_id }}">
+                        <input type="text" name="ticket_id" id="ticket_id"
+                               class="form-control"
+                               value="{{ old('ticket_id', old['ticket_id'] or '') }}"
+                               required>
+                    </div>
+                    <a href="{{ Constants.JIRA_CREATE_ISSUE }}" title="Create Issue in JIRA" class="btn btn-outline-primary btn-sm" target="_blank">
+                        Create JIRA Ticket
+                    </a>
+                </div>
+            {% else %}
+                <input type="hidden" name="ticket_id" value="{{ ticket_id }}">
+            {% endif %}
+
+            <div>
+                <a href="javascript:void(0)" onclick="copyDetails()">
+                    <i class="bi bi-copy text-primary fs-5"></i>
+                </a>
+
+                <span id="copyDetailsStatus" style="opacity:0; transition: opacity .6s; font-size:10px; color:green;">
+                    Copied!
+                </span>
+            </div>
+        </div>
+
+        {% if ticket_id == null %}
+            <small class="form-label-xs text-muted">
+                JIRA ticket ID, GTA-XXXXX
+            </small>
+        {% endif %}
+    </div>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        $('.searchable-select').select2({
+            width: '100%',
+        });
+
+        $('.advanced-select').select2({
+            tags: true,
+            width: '100%',
+            allowClear: true,
+            createTag: function (params) {
+                let term = $.trim(params.term);
+
+                if (term == '') {
+                    return null;
+                }
+
+                return {
+                    id: term,   // this will be sent to backend
+                    text: term,
+                    newOption: true
+                };
+            },
+            templateResult: function (data) {
+                if (data.newOption) {
+                    return $('<span>Add: <strong>' + data.text + '</strong></span>');
+                }
+                return data.text;
+            }
+        });
+
+        $('select[name="property_id"]').on('change', function() {
+            var selectedOption = $(this).find('option:selected');
+            var isShop = selectedOption.data('is-shop') || 'AEM';
+            
+            var $searchField = $('.select2-search__field');
+            var val = $searchField.val() || '';
+            
+            if (val.startsWith('LC-')) {
+                var parts = val.split('-');
+                if (parts.length > 1 && (parts[1] == 'Shop' || parts[1] == 'AEM')) {
+                    parts[1] = isShop;
+                    $searchField.val(parts.join('-')).trigger('input');
+                }
+            }
+        });
+
+        var tempSearchValue = '';
+        $('select[name="tags[]"]').on('select2:closing', function (e) {
+            tempSearchValue = $('.select2-search__field').val();
+        });
+
+        $('select[name="tags[]"]').on('select2:close', function (e) {
+            if (tempSearchValue) {
+                setTimeout(function() {
+                    $('.select2-search__field').val(tempSearchValue);
+                    updateRelatedTags();
+                }, 10);
+            }
+        });
+
+        var allExistingTags = {{ json_encode(allTags) }};
+
+        function updateRelatedTags() {
+            var selectedTags = $('select[name="tags[]"]').val() || [];
+            var vendors = new Set();
+            
+            selectedTags.forEach(function(tag) {
+                var matches = tag.match(/\(([^)]+)\)/g);
+                if (matches) {
+                    matches.forEach(function(match) {
+                        var vendorName = match.replace(/[()]/g, '').trim();
+                        if (vendorName) {
+                            vendors.add(vendorName);
+                        }
+                    });
+                }
+            });
+
+            var currentInput = $('.select2-search__field').val() || '';
+            var partialMatch = currentInput.match(/\(([^)]*)/g);
+            if (partialMatch) {
+                partialMatch.forEach(function(match) {
+                    var vendorName = match.replace('(', '').replace(')', '').trim();
+                    if (vendorName) {
+                        vendors.add(vendorName);
+                    }
+                });
+            }
+            
+            var relatedTags = [];
+            vendors.forEach(function(vendor) {
+                var vendorLower = vendor.toLowerCase();
+                allExistingTags.forEach(function(existingTag) {
+                    var existingLower = (existingTag.tag_name || '').toLowerCase();
+                    if (existingLower.includes('(' + vendorLower)) {
+                        relatedTags.push(existingTag);
+                    }
+                });
+            });
+            
+            var groupedTags = {};
+            relatedTags.forEach(function(tagObj) {
+                var propName = tagObj.property_name || 'Unknown Property';
+                var tagName = tagObj.tag_name;
+                if (!groupedTags[propName]) {
+                    groupedTags[propName] = new Set();
+                }
+                groupedTags[propName].add(tagName);
+            });
+            
+            var $container = $('#related_tags_container');
+            if (Object.keys(groupedTags).length > 0) {
+                var html = '';
+                Object.keys(groupedTags).sort().forEach(function(prop) {
+                    html += '<div class="mb-2">';
+                    html += '<div class="fw-bold text-dark small mb-1"><i class="bi bi-building me-1 text-muted"></i>' + prop + '</div>';
+                    html += '<div class="ms-2">';
+                    Array.from(groupedTags[prop]).forEach(function(t) {
+                        html += '<div class="badge bg-secondary me-1 mb-1" style="font-weight: 500; font-size: 0.8rem; user-select: text; cursor: text;">' + t + '</div>';
+                    });
+                    html += '</div></div>';
+                });
+                $container.html(html);
+            } else {
+                $container.html('<p class="text-muted small mb-0">No related tags found.</p>');
+            }
+        }
+
+        $('select[name="tags[]"]').on('change', updateRelatedTags);
+        $(document).on('input', '.select2-search__field', updateRelatedTags);
+
+        var defaultTag = `{{ extracted_data['default_tag'] or '' }}`;
+        if (defaultTag) {
+            $('.select2-search__field').val(defaultTag).css('width', '100%');
+            
+            $('.advanced-select').on('select2:open', function() {
+                var $searchField = $('.select2-search__field');
+                if (!$searchField.val()) {
+                    var selectedOption = $('select[name="property_id"] option:selected');
+                    var isShop = selectedOption.data('is-shop') || 'AEM';
+                    var originalTag = defaultTag;
+                    var parts = originalTag.split('-');
+                    if (parts.length > 1 && (parts[1] == 'Shop' || parts[1] == 'AEM')) {
+                        parts[1] = isShop;
+                        originalTag = parts.join('-');
+                    }
+                    $searchField.val(originalTag).trigger('input');
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            $('#details').summernote({
+                height: 500,
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    // ['font', ['strikethrough', 'superscript', 'subscript']],
+                    // ['fontsize', ['fontsize']],
+                    // ['color', ['color']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['table', ['table']],
+                    // ['insert', ['link', 'picture', 'video']],
+                    ['view', ['fullscreen', 'codeview', 'help']]
+                ]
+            });
+
+            var detailsHtml = `{{ detailsHtml or null }}`;
+            $('#details').summernote('code', detailsHtml);
+        });
+    });
+
+    function copyJiraTitle() {
+        const title = document.getElementById('jiraTitle').innerHTML;
+        const status = document.getElementById('copyStatus');
+
+        const temp = document.createElement('textarea');
+        temp.value = title;
+
+        temp.style.position = 'fixed';
+        temp.style.left = '-9999px';
+        document.body.appendChild(temp);
+
+        temp.focus();
+        temp.select();
+
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+
+        status.style.opacity = 1;
+        setTimeout(() => status.style.opacity = 0, 1000);
+    }
+
+    function copyDetails() {
+        const html = $('#details').summernote('code');
+
+        const temp = document.createElement('div');
+        temp.style.position = 'fixed';
+        temp.style.left = '-9999px';
+        temp.style.whiteSpace = 'pre-wrap';
+        temp.innerHTML = html;
+        document.body.appendChild(temp);
+
+        const range = document.createRange();
+        range.selectNodeContents(temp);
+
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        document.execCommand('copy');
+
+        document.body.removeChild(temp);
+
+        const status = document.getElementById('copyDetailsStatus');
+        status.style.opacity = 1;
+        setTimeout(() => status.style.opacity = 0, 1000);
+    }
+
+    function generateUUID() {
+        var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+        document.getElementById('uuid_display').value = uuid;
+    }
+
+    function copyUUID() {
+        var copyText = document.getElementById("uuid_display");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if(document.getElementById('uuid_display')) {
+            generateUUID();
+        }
+    });
+</script>
+{% endblock %}

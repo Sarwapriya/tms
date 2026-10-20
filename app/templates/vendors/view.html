@@ -1,0 +1,171 @@
+{% extends 'layouts/default.html' %}
+
+{% block title %}
+{{ vendor['name'] }} : Details
+{% endblock %}
+
+{% block content %}
+
+{% set sub_name = (subsidiary.name if hasattr(subsidiary, 'name') else subsidiary) if subsidiary else 'Global' %}
+
+<div class="container-fluid px-0">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{{ site_url('vendors') }}" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; padding: 0;" title="Back to Vendors">
+                <i class="bi bi-arrow-left fs-5"></i>
+            </a>
+            <div>
+                <h2 class="mb-0 fw-bold">Vendor Details</h2>
+                <div class="text-secondary small mb-0 fw-semibold d-flex align-items-center gap-2 mt-1">
+                    <span class="badge" style="{{ random_bg_style(sub_name) }}">{{ esc(sub_name) }}</span>
+                    <span>•</span>
+                    <span class="text-muted">{{ esc(vendor['name']) }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ site_url('vendors/update/' ~ vendor['id'] ~ '?' ~ http_build_query(_GET)) }}" class="apple-btn-primary btn-sm text-decoration-none">
+                Update Vendor Info
+            </a>
+            <a href="{{ site_url('vendors/export/' ~ vendor['id'] ~ '?' ~ http_build_query(_GET)) }}" class="apple-btn-secondary btn-sm text-decoration-none">
+                Export as Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- Description Cards -->
+    {% if not empty(vendor['about']) or not empty(vendor['reason']) or not empty(vendor['tag_purpose']) %}
+        <div class="row g-3 mb-4">
+            {% if not empty(vendor['about']) %}
+                <div class="col-md">
+                    <div class="apple-card h-100 d-flex flex-column">
+                        <h6 class="mb-3 text-primary d-flex align-items-center gap-2 fw-bold">
+                            <i class="bi bi-info-circle-fill text-primary"></i>
+                            <span>About</span>
+                        </h6>
+                        <div class="text-secondary" style="font-size: 0.85rem; line-height: 1.6;">
+                            {{ vendor['about'] }}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if not empty(vendor['reason']) %}
+                <div class="col-md">
+                    <div class="apple-card h-100 d-flex flex-column">
+                        <h6 class="mb-3 text-primary d-flex align-items-center gap-2 fw-bold">
+                            <i class="bi bi-lightbulb text-primary"></i>
+                            <span>Business Reason</span>
+                        </h6>
+                        <div class="text-secondary" style="font-size: 0.85rem; line-height: 1.6;">
+                            {{ vendor['reason'] }}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if not empty(vendor['tag_purpose']) %}
+                <div class="col-md">
+                    <div class="apple-card h-100 d-flex flex-column">
+                        <h6 class="mb-3 text-primary d-flex align-items-center gap-2 fw-bold">
+                            <i class="bi bi-shield-check text-primary"></i>
+                            <span>Tag Purpose</span>
+                        </h6>
+                        <div class="text-secondary" style="font-size: 0.85rem; line-height: 1.6;">
+                            {{ vendor['tag_purpose'] }}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- Tags List -->
+    {% if tags %}
+        <div class="mb-4">
+            <h5 class="mb-3 text-primary d-flex align-items-center gap-2 fw-bold">
+                <i class="bi bi-tags-fill"></i>
+                <span>Tags Associated</span>
+            </h5>
+            <div class="apple-table-container">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="form-label-sm fw-semibold">#</th>
+                                <th class="form-label-sm fw-semibold">Property</th>
+                                <th class="form-label-sm fw-semibold">Name</th>
+                                <th class="form-label-sm fw-semibold">Status</th>
+                                <th class="form-label-sm fw-semibold">Days</th>
+                                <th class="form-label-sm fw-semibold">End Date</th>
+                                <th class="form-label-sm fw-semibold">Updated</th>
+                                <th class="form-label-sm fw-semibold">Actions</th>
+                            </tr>
+                        </thead>
+                    <tbody>
+                        {% for tag in tags %}
+                            {% set ticketId = tag.get('ticket_id') or None %}
+                            <tr>
+                                <!-- ID -->
+                                <td>{{ tag['id'] }}</td>
+                                <!-- Property -->
+                                <td>
+                                    <i class="bi bi-tag-fill" style="{{ random_text_style(tag['property_id']) }}"></i>
+                                    <a href="{{ properties[tag['property_id']]['ref_link'] }}" target="_blank" rel="noopener" class="apple-link-dark form-label-sm ms-1">
+                                        {{ properties[tag['property_id']]['name'] }}
+                                    </a>
+                                </td>
+                                <!-- Name -->
+                                <td class="form-label-sm">
+                                    <a href="{{ tag['ref_link'] }}" target="_blank" rel="noopener" class="apple-link-dark">
+                                        {{ esc(tag['name']) }}
+                                    </a>
+                                </td>
+                                <!-- Status -->
+                                <td>
+                                    <span class="badge {{ status_class(tag['status']) }}">
+                                        {{ esc(status_label(tag['status'])) }}
+                                    </span>
+                                    {% if tag['status'] == Constants.STATUS_PENDING_VERIFICATION %}
+                                        <br>
+                                        <a href="{{ Constants.JIRA_LINK ~ ticketId }}" target="_blank" rel="noopener" class="apple-link ms-1" style="font-size: 0.8rem;">
+                                            {{ ticketId }}
+                                        </a>
+                                    {% endif %}
+                                </td>
+                                <!-- Days -->
+                                {% set diffDays = diff_days(tag['al_end_date']) %}
+                                <td class="{{ days_class(diffDays) }} form-label-sm">
+                                    {{ esc(diffDays) }}
+                                </td>
+                                <!-- End Date -->
+                                <td class="{{ date_class(tag['al_end_date'], tag['status']) }} form-label-sm" style="width:max-content; white-space:nowrap;">
+                                    {{ esc(date('d-m-Y', strtotime(tag['al_end_date']))) }}
+                                    {% if tag['requested_date'] %}
+                                        <br><small class="text-muted">[{{ esc(date('d-m-Y', strtotime(tag['requested_date']))) }}]</small>
+                                    {% endif %}
+                                </td>
+                                <!-- Updated At -->
+                                <td class="form-label-sm" style="width:max-content; white-space:nowrap;">{{ esc(date('d-m-Y', strtotime(tag['updated_at']))) }}</td>
+                                <!-- Actions -->
+                                <td class="text-nowrap align-middle">
+                                    <a href="{{ site_url('tags/view/' ~ tag['id']) }}" title="View tag details" class="apple-btn-secondary btn-sm">View</a>
+                                    <a href="{{ site_url('tags/update/' ~ tag['id']) }}" title="Update tag details" class="apple-btn-primary btn-sm">Update</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-warning text-center animate-fade-in" role="alert">
+            [{{ subsidiary }}] [{{ vendor['name'] }}] No tags found on this section.
+        </div>
+
+    {% endif %}
+</div>
+
+{% endblock %}

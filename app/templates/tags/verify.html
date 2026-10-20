@@ -1,0 +1,33 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Verify {{ tag.name }} | Martech TMS{% endblock %}
+
+{% block content %}
+<div class="p-4 mx-auto text-center" style="max-width: 580px;">
+    <div class="bg-warning bg-opacity-10 text-warning p-3 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+        <i class="bi bi-shield-check fs-2"></i>
+    </div>
+    <h3 class="fw-bold mb-2">Confirm Tag Verification</h3>
+    <p class="text-muted mb-4">
+        You are verifying and approving tag <strong>"{{ tag.name }}"</strong> (#{{ tag.id }}). This will transition its governance status from <em>Pending Verification</em> to <strong>Enabled</strong>.
+    </p>
+
+    <div class="bg-light p-3 rounded-3 text-start mb-4 border">
+        <div class="row g-2 small">
+            <div class="col-4 text-muted">Property:</div>
+            <div class="col-8 fw-semibold">{{ tag.property.name if tag.property else '-' }}</div>
+            <div class="col-4 text-muted">Vendor:</div>
+            <div class="col-8 fw-semibold">{{ tag.vendor.name if tag.vendor else '-' }}</div>
+            <div class="col-4 text-muted">Expiry:</div>
+            <div class="col-8 fw-semibold">{{ tag.al_end_date|format_date or 'None' }}</div>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('tags.verify', id=tag.id) }}" class="d-flex justify-content-center gap-3">
+        <a href="{{ url_for('tags.view', id=tag.id) }}" class="btn btn-light border px-4">Cancel</a>
+        <button type="submit" class="btn btn-warning px-4 text-dark fw-bold">
+            <i class="bi bi-check-lg me-1"></i> Verify &amp; Enable
+        </button>
+    </form>
+</div>
+{% endblock %}

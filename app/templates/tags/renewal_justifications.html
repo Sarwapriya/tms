@@ -1,0 +1,426 @@
+{% extends 'layouts/default.html' %}
+
+{% block title %}
+Renewal Justifications
+{% endblock %}
+
+{% block content %}
+
+<style>
+    .apple-settings-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 16px;
+        padding: 24px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .apple-tabs-container {
+        border-bottom: 1px solid var(--color-border-subtle);
+        margin-bottom: 24px;
+    }
+
+    .apple-tab-btn {
+        background: none;
+        border: none;
+        padding: 10px 20px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    .apple-tab-btn:hover {
+        color: var(--color-primary);
+    }
+
+    .apple-tab-btn.active {
+        color: var(--color-primary);
+        border-bottom-color: var(--color-primary);
+        font-weight: 600;
+    }
+
+    .btn-action-hover {
+        transition: all 0.2s ease;
+        border-radius: 8px;
+    }
+
+    .btn-action-hover:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Actions Cell & Styles */
+    .actions-cell {
+        position: relative;
+        width: 100px;
+        min-width: 100px;
+        text-align: center;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+
+    .action-style-original-wrapper,
+    .action-style-glassmorphic-wrapper,
+    .action-style-hover-inline-wrapper {
+        display: none;
+    }
+
+    .apple-table.style-original .action-style-original-wrapper {
+        display: block;
+    }
+
+    .apple-table.style-glassmorphic .action-style-glassmorphic-wrapper {
+        display: block;
+    }
+
+    .apple-table.style-hover-inline .action-style-hover-inline-wrapper {
+        display: flex;
+        justify-content: center;
+    }
+
+    /* 1. Sleek Minimalist Dot Trigger Styling */
+    .action-trigger-dot {
+        background: transparent;
+        border: none;
+        color: var(--color-text-muted);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .action-trigger-dot:hover, 
+    .action-trigger-dot[aria-expanded="true"] {
+        background-color: var(--color-secondary-bg);
+        color: var(--color-text-base);
+        transform: scale(1.05);
+    }
+    .action-trigger-dot:active {
+        transform: scale(0.95);
+    }
+
+    /* 2. Glassmorphic Dropdown Styling */
+    .glassmorphic-menu {
+        background: rgba(255, 255, 255, 0.82) !important;
+        backdrop-filter: blur(12px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+        border: 1px solid rgba(0, 0, 0, 0.08) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+        border-radius: 12px !important;
+        padding: 6px !important;
+        transform-origin: top right;
+        animation: dropdownFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes dropdownFadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.96) translateY(-4px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .glassmorphic-menu .dropdown-item {
+        border-radius: 8px !important;
+        padding: 6px 12px !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        transition: background-color 0.15s ease, color 0.15s ease !important;
+        color: var(--color-text-base) !important;
+    }
+
+    .glassmorphic-menu .dropdown-item:hover {
+        background-color: var(--color-primary) !important;
+        color: #ffffff !important;
+    }
+    .glassmorphic-menu .dropdown-item:hover i {
+        color: #ffffff !important;
+    }
+
+    /* 3. Hover-Revealed Inline Action Buttons Styling */
+    .hover-actions-container {
+        opacity: 0;
+        transform: translateX(6px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .apple-table tr:hover .hover-actions-container {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .apple-table tr:focus-within .hover-actions-container {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .hover-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        color: var(--color-text-muted);
+        background-color: var(--color-secondary-bg);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        text-decoration: none !important;
+        font-size: 0.8rem;
+    }
+
+    .hover-action-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .hover-action-btn:active {
+        transform: scale(0.95);
+    }
+
+    .hover-action-btn.btn-update:hover {
+        background-color: var(--color-badge-warning-bg) !important;
+        color: var(--color-badge-warning-text) !important;
+    }
+
+    /* Micro Segmented Control Styling */
+    .micro-segmented-control {
+        background-color: var(--color-secondary-bg);
+        border-radius: 20px;
+        padding: 3px;
+        display: inline-flex;
+        gap: 2px;
+        border: 1px solid rgba(0, 0, 0, 0.03);
+    }
+
+    .micro-segmented-control button {
+        border: none;
+        background: transparent;
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        border-radius: 15px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        outline: none;
+    }
+
+    .micro-segmented-control button:hover {
+        color: var(--color-text-base);
+    }
+
+    .micro-segmented-control button.active {
+        background-color: var(--color-card-bg);
+        color: var(--color-text-base);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+</style>
+
+<div class="container-fluid px-0">
+    <!-- Page Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom flex-wrap gap-3">
+        <div>
+            <h2 class="mb-0 fw-bold">Renewal Justifications</h2>
+            <p class="text-secondary small mb-0">View and manage uploaded tag renewal justifications, segregated by subsidiary.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ site_url('tags/upload-renewal-justifications') }}" class="apple-btn-primary btn-action-hover text-decoration-none d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-excel-fill"></i> Upload Justifications
+            </a>
+        </div>
+    </div>
+
+    <!-- Subsidiary Tabs & Action Style switcher -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+        <!-- Subsidiary Tabs -->
+        <div class="apple-tabs-container d-flex gap-2 flex-wrap mb-0 border-bottom-0" id="subsidiaryTabs" style="margin-bottom: 0;">
+            {% for sub in subsidiaries %}
+                {% set count = (grouped[sub['id']]|length) if (sub['id'] in grouped and grouped[sub['id']]) else 0 %}
+                <button class="apple-tab-btn {{ ('active' if loop.first else '') }}" id="tab-sub-{{ sub['id'] }}-btn" onclick="switchSubTab('{{ sub['id'] }}')">
+                    <span class="badge rounded-pill bg-light text-secondary border me-1 px-2" style="font-size: 0.72rem; font-weight: 600;">{{ count }}</span>
+                    {{ esc(sub['name']) }}
+                </button>
+            {% endfor %}
+        </div>
+
+        <!-- Action Style Switcher -->
+        <div class="d-flex align-items-center justify-content-end gap-2 ms-auto">
+            <span class="text-secondary" style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8;">Action Style:</span>
+            <div class="micro-segmented-control" id="actionStyleControl">
+                <button type="button" data-style="original">Original</button>
+                <button type="button" data-style="glassmorphic">Glassmorphic</button>
+                <button type="button" data-style="hover-inline">Hover Inline</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Contents -->
+    {% for sub in subsidiaries %}
+        <div class="settings-tab-content {{ ('' if loop.first else 'd-none') }}" id="tab-sub-{{ sub['id'] }}">
+            {% if empty(grouped[sub['id']]) %}
+                <div class="apple-settings-card text-center py-5 text-muted">
+                    <i class="bi bi-inbox fs-2 mb-2 d-block text-secondary" style="opacity: 0.5;"></i>
+                    <span class="fw-semibold">No renewal justifications found</span>
+                    <p class="small text-secondary mb-0">There are no uploaded justifications for {{ esc(sub['name']) }}.</p>
+                </div>
+            {% else %}
+                <div class="apple-settings-card table-responsive">
+                    <table class="table table-hover align-middle mb-0 apple-table">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--color-border-subtle);">
+                                <th style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--color-text-secondary); width: 22%;">Property Name</th>
+                                <th style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--color-text-secondary); width: 22%;">Tag Name</th>
+                                <th style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--color-text-secondary); width: 10%; text-align: center;">Renew</th>
+                                <th style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--color-text-secondary); width: 22%;">Renewal Justification</th>
+                                <th style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--color-text-secondary); width: 12%;">Duration</th>
+                                <th style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--color-text-secondary); width: 12%;">Last Updated</th>
+                                <th style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--color-text-secondary); width: 10%;" class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rj in grouped[sub['id']] %}
+                                <tr>
+                                    <td class="fw-semibold">{{ esc(rj['property_name']) }}</td>
+                                    <td>
+                                        <a href="{{ site_url('tags/view/' ~ rj['tag_id']) }}" class="apple-link-dark fw-bold text-decoration-none">
+                                            {{ esc(rj['tag_name']) }}
+                                        </a>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if rj['renew'] == 'Y' or rj['renew'] == 'Yes' %}
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-2.5 py-1" style="font-size: 0.72rem; font-weight: 600;">Yes</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-2.5 py-1" style="font-size: 0.72rem; font-weight: 600;">No</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ esc(rj['justification']) }}">
+                                        {{ esc(rj['justification']) }}
+                                    </td>
+                                    <td>{{ esc(rj['duration']) }}</td>
+                                    <td class="text-secondary" style="font-size: 0.85rem;">{{ date('d-m-Y H:i', strtotime(rj['updated_at'])) }}</td>
+                                    
+                                    <!-- Actions cell supporting style-based display -->
+                                    <td class="text-nowrap actions-cell">
+                                        <!-- Original Style -->
+                                        <div class="action-style-original-wrapper">
+                                            <div class="dropdown">
+                                                <button class="apple-btn-secondary btn-sm dropdown-toggle px-2.5 py-1 d-inline-flex align-items-center gap-1" type="button" id="actionsDropdown_{{ rj['id'] }}" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.8rem; border-radius: 9999px;">
+                                                    Actions
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="actionsDropdown_{{ rj['id'] }}" style="border-radius: 10px; border: 1px solid var(--color-border-input); z-index: 1050;">
+                                                    <li>
+                                                        <a class="dropdown-item py-2" href="{{ site_url('tags/renewal-justifications/update/' ~ rj['id']) }}" style="font-size: 0.85rem;">
+                                                            <i class="bi bi-pencil-square text-warning me-2"></i>Edit
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <!-- Style A: Glassmorphic Dropdown -->
+                                        <div class="action-style-glassmorphic-wrapper">
+                                            <div class="dropdown">
+                                                <button class="action-trigger-dot d-inline-flex align-items-center justify-content-center" type="button" id="actionsDropdownA_{{ rj['id'] }}" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
+                                                    <i class="bi bi-three-dots"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end glassmorphic-menu shadow" aria-labelledby="actionsDropdownA_{{ rj['id'] }}" style="z-index: 1050;">
+                                                    <li>
+                                                        <a class="dropdown-item py-2" href="{{ site_url('tags/renewal-justifications/update/' ~ rj['id']) }}">
+                                                            <i class="bi bi-pencil-square text-warning me-2"></i>Edit
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <!-- Style B: Hover-Revealed Inline Actions -->
+                                        <div class="action-style-hover-inline-wrapper">
+                                            <div class="hover-actions-container d-inline-flex align-items-center gap-1">
+                                                <a href="{{ site_url('tags/renewal-justifications/update/' ~ rj['id']) }}" class="hover-action-btn btn-update" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit Justification">
+                                                    <i class="bi bi-pencil-fill"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+<script>
+    function switchSubTab(subId) {
+        document.querySelectorAll('.apple-tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelectorAll('.settings-tab-content').forEach(tab => {
+            tab.classList.add('d-none');
+        });
+
+        const activeBtn = document.getElementById(`tab-sub-${subId}-btn`);
+        const activeTab = document.getElementById(`tab-sub-${subId}`);
+        
+        if (activeBtn) activeBtn.classList.add('active');
+        if (activeTab) activeTab.classList.remove('d-none');
+        
+        localStorage.setItem('activeRenewalSubTab', subId);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const storedTab = localStorage.getItem('activeRenewalSubTab');
+        if (storedTab && document.getElementById(`tab-sub-${storedTab}`)) {
+            switchSubTab(storedTab);
+        }
+
+        // Action Style Switcher logic
+        const actionStyleControl = document.getElementById('actionStyleControl');
+        if (actionStyleControl) {
+            const savedStyle = localStorage.getItem('tag_action_style') || 'glassmorphic';
+            
+            document.querySelectorAll('.apple-table').forEach(tbl => {
+                tbl.classList.remove('style-original', 'style-glassmorphic', 'style-hover-inline');
+                tbl.classList.add(`style-${savedStyle}`);
+            });
+            
+            actionStyleControl.querySelectorAll('button').forEach(btn => {
+                if (btn.dataset.style == savedStyle) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            actionStyleControl.addEventListener('click', function (e) {
+                const btn = e.target.closest('button[data-style]');
+                if (!btn) return;
+                
+                const selectedStyle = btn.dataset.style;
+                actionStyleControl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                document.querySelectorAll('.apple-table').forEach(tbl => {
+                    tbl.classList.remove('style-original', 'style-glassmorphic', 'style-hover-inline');
+                    tbl.classList.add(`style-${selectedStyle}`);
+                });
+                
+                localStorage.setItem('tag_action_style', selectedStyle);
+            });
+        }
+    });
+</script>
+
+{% endblock %}

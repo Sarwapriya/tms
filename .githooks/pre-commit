@@ -1,0 +1,13 @@
+#!/bin/sh
+# Git pre-commit hook to automatically bump version in version.txt
+
+if command -v python >/dev/null 2>&1; then
+    python scripts/bump_version.py --hook
+elif command -v python3 >/dev/null 2>&1; then
+    python3 scripts/bump_version.py --hook
+elif command -v py >/dev/null 2>&1; then
+    py -3 scripts/bump_version.py --hook
+else
+    echo "[version-hook] Warning: Python not found in PATH. Skipping version bump."
+fi
+exit $?

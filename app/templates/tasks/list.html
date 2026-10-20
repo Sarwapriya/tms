@@ -1,0 +1,2128 @@
+{% extends 'layouts/default.html' %}
+
+{% block title %}
+Tasks
+{% endblock %}
+
+{% block content %}
+
+{% set pendingCount = (status_counts.get(1, 0)) + (status_counts.get(5, 0)) %}
+{% set inProgressCount = (status_counts.get(2, 0)) + (status_counts.get(3, 0)) + (status_counts.get(4, 0)) %}
+{% set blockedCount = status_counts.get(7, 0) %}
+{% set completedCount = status_counts.get(6, 0) %}
+{% set isMeMode = (request.args.get('me_mode') == '1') if 'me_mode' in request.args else (session.get('al_me_mode') ==
+1) %}
+{% set isDWF = (Constants.USER_TEAMS.get(session.get('user_id')) == Constants.TEAM_DWF) %}
+{% set totalLogs = pagination.total if pagination else logs|length %}
+
+{{ csrf_field() }}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom flex-wrap gap-3">
+        <div>
+            <h2 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                <span>Tasks</span>
+                <span class="badge bg-secondary text-secondary"
+                    style="font-size: 0.85rem; font-weight: 600; padding: 0.35em 0.7em; border-radius: 20px;">
+                    {{ totalLogs }}
+                </span>
+                <span id="selectedCountBadge" class="badge bg-primary text-white"
+                    style="display: none; font-size: 0.85rem; font-weight: 500; padding: 0.35em 0.7em; border-radius: 20px;">
+                    0 selected
+                </span>
+            </h2>
+            <p class="text-secondary small mb-0">Record and track project management activities, support tasks, and
+                campaign tag updates.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ site_url('tasks/create') }}" title="Create a new log"
+                class="apple-btn-primary btn-sm px-3 text-decoration-none">
+                <i class="bi bi-plus-lg me-1"></i> Create Task
+            </a>
+
+            <!-- Me Mode Toggle Button -->
+            {% if not (forceMeMode and not isAdmin) %}
+            <a href="{{ getMeModeUrl() }}"
+                class="{{ 'apple-btn-primary' if isMeMode else 'apple-btn-secondary' }} btn-sm px-3 text-decoration-none">
+                <i class="bi {{ 'bi-person-fill' if isMeMode else 'bi-person' }} me-1"></i> Assigned To Me
+            </a>
+            {% endif %}
+
+            <div class="dropdown">
+                <button class="apple-btn-secondary btn-sm dropdown-toggle px-3 d-flex align-items-center gap-1"
+                    type="button" id="headerActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i> Actions
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="headerActionsDropdown"
+                    style="border-radius: 10px; border: 1px solid var(--color-border-input);">
+                    <li>
+                        <a class="dropdown-item py-2" href="#" data-bs-toggle="collapse"
+                            data-bs-target="#sizeLegendCollapse" style="font-size: 0.9rem;">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>Size Legend
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item py-2" href="{{ site_url('tasks/export') }}" style="font-size: 0.9rem;">
+                            <i class="bi bi-file-earmark-arrow-down-fill text-secondary me-2"></i>Export as Excel
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Welcome Message Banner -->
+    <div class="row mb-4" id="welcomeBannerRow">
+        <div class="col-12">
+            <div id="aiWelcomeCard" class="apple-card p-4 d-flex align-items-center shadow-sm"
+                style="background: linear-gradient(135deg, rgba({{ user_color_r|default(0) }},{{ user_color_g|default(113) }},{{ user_color_b|default(227) }},0.05) 0%, #ffffff 100%); border-left: 4px solid {{ user_color|default('#0071e3') }}; min-height: 80px; border-radius: 16px;">
+                <div class="me-4 fs-2" id="aiWelcomeIcon"
+                    style="opacity: 0.8; color: {{ user_color|default('#0071e3') }};">
+                    <div class="spinner-border spinner-border-sm" role="status"
+                        style="width: 1.5rem; height: 1.5rem; border-width: 0.15em;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <div id="aiWelcomeMessageContainer" class="flex-grow-1">
+                    <p id="aiWelcomeMessageText" class="mb-0 text-dark fw-medium"
+                        style="font-size: 1.05rem; line-height: 1.5;">
+                        <span class="text-secondary" id="aiLoadingText"><em>Waking up the AI... (it takes a moment to be
+                                this smart) ☕</em></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Size Legend Collapse Panel -->
+    <div class="collapse" id="sizeLegendCollapse">
+        <div class="apple-card mb-4 bg-white">
+            <h5 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2"
+                style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">
+                <i class="bi bi-info-circle-fill text-primary"></i> T-Shirt Size Legend (Project Management)
+            </h5>
+            <div class="row g-3">
+                <div class="col-md col-sm-6">
+                    <div class="p-2 rounded border border-light bg-light h-100">
+                        <span class="badge bg-secondary text-white mb-1">S</span>
+                        <p class="small mb-0 text-muted"><strong>Small:</strong> Minor tasks, quick fixes, basic configs
+                            (effort &lt; 2 hours).</p>
+                    </div>
+                </div>
+                <div class="col-md col-sm-6">
+                    <div class="p-2 rounded border border-light bg-light h-100">
+                        <span class="badge bg-warning text-dark mb-1">M</span>
+                        <p class="small mb-0 text-muted"><strong>Medium:</strong> Standard setups, simple
+                            troubleshooting, standard tracking (effort 2-5 hours).</p>
+                    </div>
+                </div>
+                <div class="col-md col-sm-6">
+                    <div class="p-2 rounded border border-light bg-light h-100">
+                        <span class="badge bg-danger text-white mb-1">L</span>
+                        <p class="small mb-0 text-muted"><strong>Large:</strong> New tag integrations, complex tracking
+                            rules, multi-page setups (effort 1-2 days).</p>
+                    </div>
+                </div>
+                <div class="col-md col-sm-6">
+                    <div class="p-2 rounded border border-light bg-light h-100">
+                        <span class="badge bg-danger text-white mb-1">XL</span>
+                        <p class="small mb-0 text-muted"><strong>Extra Large:</strong> Major property setups,
+                            migrations, complex custom JS (effort 3-5 days).</p>
+                    </div>
+                </div>
+                <div class="col-md col-sm-6">
+                    <div class="p-2 rounded border border-light bg-light h-100">
+                        <span class="badge bg-danger text-white mb-1">Sprint</span>
+                        <p class="small mb-0 text-muted"><strong>Sprint:</strong> Massive undertakings, complex
+                            migrations, multi-system integration (effort 1-2 weeks).</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Status Counts -->
+    <div class="row g-3 mb-4 row-cols-2 row-cols-md-3 row-cols-lg-5">
+        <!-- Pending Card -->
+        <div class="col">
+            <a href="{{ getGroupFilterUrl('pending') }}" class="dashboard-metric-link">
+                <div
+                    class="dashboard-metric-card card-pending {{ 'active' if filters.get('status_group') == 'pending' else '' }}">
+                    <div class="dashboard-metric-info">
+                        <span class="dashboard-metric-label">Pending</span>
+                        <h3 class="dashboard-metric-value">{{ pendingCount }}</h3>
+                        <span class="dashboard-metric-desc">Not yet started & Pending review</span>
+                    </div>
+                    <i class="bi bi-hourglass-split dashboard-metric-icon"></i>
+                </div>
+            </a>
+        </div>
+        <!-- In Progress Card -->
+        <div class="col">
+            <a href="{{ getGroupFilterUrl('in_progress') }}" class="dashboard-metric-link">
+                <div
+                    class="dashboard-metric-card card-in-progress {{ 'active' if filters.get('status_group') == 'in_progress' else '' }}">
+                    <div class="dashboard-metric-info">
+                        <span class="dashboard-metric-label">In Progress</span>
+                        <h3 class="dashboard-metric-value">{{ inProgressCount }}</h3>
+                        <span class="dashboard-metric-desc">Investigation, Implementation & QA</span>
+                    </div>
+                    <i class="bi bi-gear-wide-connected dashboard-metric-icon"></i>
+                </div>
+            </a>
+        </div>
+        <!-- Blocked/Hold Card -->
+        <div class="col">
+            <a href="{{ getGroupFilterUrl('blocked') }}" class="dashboard-metric-link">
+                <div
+                    class="dashboard-metric-card card-blocked {{ 'active' if filters.get('status_group') == 'blocked' else '' }}">
+                    <div class="dashboard-metric-info">
+                        <span class="dashboard-metric-label">Blocked / Hold</span>
+                        <h3 class="dashboard-metric-value">{{ blockedCount }}</h3>
+                        <span class="dashboard-metric-desc">Blocked / On Hold logs</span>
+                    </div>
+                    <i class="bi bi-pause-circle dashboard-metric-icon"></i>
+                </div>
+            </a>
+        </div>
+        <!-- Needs Attention Card -->
+        <div class="col">
+            <a href="{{ getGroupFilterUrl('needs_attention') }}" class="dashboard-metric-link">
+                <div
+                    class="dashboard-metric-card card-needs-attention {{ 'active' if filters.get('status_group') == 'needs_attention' else '' }}">
+                    <div class="dashboard-metric-info">
+                        <span class="dashboard-metric-label">Needs Attention</span>
+                        <h3 class="dashboard-metric-value">{{ needs_attention_count|default(0) }}</h3>
+                        <span class="dashboard-metric-desc">Start date > 4 days ago</span>
+                    </div>
+                    <i class="bi bi-exclamation-triangle-fill dashboard-metric-icon"></i>
+                </div>
+            </a>
+        </div>
+        <!-- Completed Card -->
+        <div class="col">
+            <a href="{{ getGroupFilterUrl('completed') }}" class="dashboard-metric-link">
+                <div
+                    class="dashboard-metric-card card-completed {{ 'active' if filters.get('status_group') == 'completed' else '' }}">
+                    <div class="dashboard-metric-info">
+                        <span class="dashboard-metric-label">Completed</span>
+                        <h3 class="dashboard-metric-value">{{ completedCount }}</h3>
+                        <span class="dashboard-metric-desc">Completed logs</span>
+                    </div>
+                    <i class="bi bi-check-circle dashboard-metric-icon"></i>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- #region | SEARCH FILTER -->
+    <form method="get" class="m-0" id="filterForm">
+        {% if request.args.get('status_group', '') %}
+        <input type="hidden" name="status_group" value="{{ request.args.get('status_group', '') }}">
+        {% endif %}
+        <!-- Primary Search Bar -->
+        <div class="apple-control-bar mb-3">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Search Input -->
+                <div class="position-relative flex-grow-1" style="min-width: 250px;">
+                    <i class="bi bi-search text-muted position-absolute"
+                        style="left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.9rem;"></i>
+                    <input type="text" name="keyword" class="form-control form-control-xs"
+                        style="height: 36px; padding-left: 36px !important; border-radius: 20px;"
+                        placeholder="Search logs..." value="{{ request.args.get('keyword', '') }}">
+                </div>
+
+                <!-- Toggle Filters Button -->
+                <button type="button" class="apple-btn-secondary btn-sm d-inline-flex align-items-center gap-2"
+                    style="height: 36px; border-radius: 20px; font-weight: 500;" data-bs-toggle="collapse"
+                    data-bs-target="#advancedFiltersCollapse"
+                    aria-expanded="{{ 'true' if hasActiveAdvancedFilters else 'false' }}"
+                    aria-controls="advancedFiltersCollapse">
+                    <i class="bi bi-funnel"></i>
+                    <span>Filters</span>
+                    {% if advancedFiltersCount > 0 %}
+                    <span class="badge bg-primary text-white rounded-circle px-1.5 py-0.5"
+                        style="font-size: 0.75rem; min-width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center;">
+                        {{ advancedFiltersCount }}
+                    </span>
+                    {% endif %}
+                </button>
+
+                <!-- Action Buttons -->
+                <button type="submit" class="apple-btn-primary btn-sm px-4"
+                    style="height: 36px; border-radius: 20px;">Apply</button>
+                {% if _GET %}
+                <a href="{{ site_url('tasks') }}"
+                    class="apple-btn-secondary btn-sm px-4 text-decoration-none d-inline-flex align-items-center justify-content-center"
+                    style="height: 36px; border-radius: 20px;">Clear</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Collapsible Advanced Filters Panel -->
+        <div class="collapse {{ 'show' if hasActiveAdvancedFilters else '' }} mb-4" id="advancedFiltersCollapse">
+            <div class="apple-card"
+                style="background-color: var(--color-bg-base); border: 1px solid rgba(0, 0, 0, 0.05); box-shadow: none; padding: 20px;">
+                <h5 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2"
+                    style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="bi bi-sliders text-primary"></i> Advanced Filters
+                </h5>
+                <div class="row g-3">
+                    <!-- Subsidiary -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Subsidiary</label>
+                        <select name="subsidiary_id" class="form-select form-select-xs"
+                            style="height: 34px; border-radius: 8px;">
+                            <option value="">All Subsidiaries</option>
+                            {% for value, label in Constants.ACTIVITY_LOG_SUBSIDIARIES.items() %}
+                            <option value="{{ value }}" {{ 'selected' if
+                                (filters.get('subsidiary_id')|string==value|string) else '' }}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Team -->
+                    <!--                    <div class="col-md-4 col-lg-3">-->
+                    <!--                        <label class="form-label-xs fw-semibold text-secondary mb-1">Team</label>-->
+                    <!--                        <select name="team_id" class="form-select form-select-xs" style="height: 34px; border-radius: 8px;">-->
+                    <!--                            <option value="">All Teams</option>-->
+                    <!--                            -->
+                    <!--                                <option value="--><!--"-->
+                    <!--                                    -->
+                    <!--                                    -->
+                    <!--                                </option>-->
+                    <!--                            -->
+                    <!--                        </select>-->
+                    <!--                    </div>-->
+
+                    <!-- Project -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Project</label>
+                        <select name="project" class="form-select form-select-xs"
+                            style="height: 34px; border-radius: 8px;">
+                            <option value="">All Projects</option>
+                            {% for pName in project_names %}
+                            <option value="{{ pName }}" {{ 'selected' if (filters.get('project')==pName) else '' }}>
+                                {{ pName }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Assignee -->
+                    {% if not hideAssigneeSystemWide %}
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Assignee</label>
+                        <select name="assignee" class="form-select form-select-xs"
+                            style="height: 34px; border-radius: 8px;">
+                            <option value="">All Assignees</option>
+                            {% for value, label in Constants.USERS.items() %}
+                            <option value="{{ value }}" {{ 'selected' if (filters.get('assignee')|string==value|string)
+                                else '' }}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <!-- Status -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Status</label>
+                        <select name="status" class="form-select form-select-xs"
+                            style="height: 34px; border-radius: 8px;">
+                            <option value="">All Statuses</option>
+                            {% for value, label in Constants.ACTIVITY_LOGS_STATUS.items() %}
+                            <option value="{{ value }}" {{ 'selected' if (filters.get('status')|string==value|string)
+                                else '' }}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Priority -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Priority</label>
+                        <select name="priority" class="form-select form-select-xs"
+                            style="height: 34px; border-radius: 8px;">
+                            <option value="">All Priorities</option>
+                            {% for value, label in Constants.PRIORITIES.items() %}
+                            <option value="{{ value }}" {{ 'selected' if (filters.get('priority')|string==value|string)
+                                else '' }}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Type -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Type</label>
+                        <select name="type" class="form-select form-select-xs"
+                            style="height: 34px; border-radius: 8px;">
+                            <option value="">All Types</option>
+                            {% for value, label in Constants.ACTIVITY_TYPES.items() %}
+                            <option value="{{ value }}" {{ 'selected' if (filters.get('type')|string==value|string)
+                                else '' }}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Labels -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Labels</label>
+                        <select name="labels[]" class="form-select form-select-xs select2-multiple" multiple="multiple"
+                            style="width: 100%; border-radius: 8px;">
+                            {% set selectedLabels = filters.get('labels') or [] %}
+                            {% for lbl in all_labels %}
+                            <option value="{{ lbl }}" {{ 'selected' if in_array(lbl, selectedLabels) else '' }}>
+                                {{ lbl }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+
+                    {% if isDWF %}
+                    <!-- Campaign Status -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Campaign Status</label>
+                        <select name="campaign_status" class="form-select form-select-xs"
+                            style="height: 34px; border-radius: 8px;">
+                            <option value="">All Campaign Statuses</option>
+                            {% for value, label in Constants.CAMPAIGN_STATUS.items() %}
+                            <option value="{{ value }}" {{ 'selected' if
+                                (filters.get('campaign_status')|string==value|string) else '' }}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <!-- Created From -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Created From</label>
+                        <input type="date" name="created_from" class="form-control form-control-xs"
+                            style="height: 34px; border-radius: 8px;" value="{{ filters.get('created_from', '') }}">
+                    </div>
+
+                    <!-- Created To -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Created To</label>
+                        <input type="date" name="created_to" class="form-control form-control-xs"
+                            style="height: 34px; border-radius: 8px;" value="{{ filters.get('created_to', '') }}">
+                    </div>
+
+                    <!-- Started From -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Started From</label>
+                        <input type="date" name="started_from" class="form-control form-control-xs"
+                            style="height: 34px; border-radius: 8px;" value="{{ filters.get('started_from', '') }}">
+                    </div>
+
+                    <!-- Started To -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Started To</label>
+                        <input type="date" name="started_to" class="form-control form-control-xs"
+                            style="height: 34px; border-radius: 8px;" value="{{ filters.get('started_to', '') }}">
+                    </div>
+
+                    <!-- Finished From -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Finished From</label>
+                        <input type="date" name="finished_from" class="form-control form-control-xs"
+                            style="height: 34px; border-radius: 8px;" value="{{ filters.get('finished_from', '') }}">
+                    </div>
+
+                    <!-- Finished To -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">Finished To</label>
+                        <input type="date" name="finished_to" class="form-control form-control-xs"
+                            style="height: 34px; border-radius: 8px;" value="{{ filters.get('finished_to', '') }}">
+                    </div>
+
+                    <!-- Show Completed -->
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label-xs fw-semibold text-secondary mb-1">&nbsp;</label>
+                        <div class="form-check form-switch d-flex align-items-center gap-2" style="height: 34px;">
+                            <input class="form-check-input" type="checkbox" name="show_completed" value="1"
+                                id="showCompletedSwitch" {{ 'checked' if (request.args.get('show_completed', '' ) is
+                                defined and request.args.get('show_completed', '' )=='1' ) else '' }}
+                                onchange="this.form.submit()"
+                                style="cursor: pointer; width: 2.4em; height: 1.2em; margin-top: 0;">
+                            <label class="form-check-label small fw-medium text-secondary mb-0"
+                                for="showCompletedSwitch" style="cursor: pointer; user-select: none;">Show
+                                Completed</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" name="sort_by" value="{{ filters.get('sort_by', 'created_at') }}">
+        <input type="hidden" name="sort_dir" value="{{ filters.get('sort_dir', 'desc') }}">
+        <input type="hidden" name="me_mode" value="{{ '1' if isMeMode else '0' }}">
+    </form>
+
+    <!-- Active Filters Pills -->
+    {% if active_pills %}
+    <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+        <span class="text-secondary small fw-medium">Active Filters:</span>
+        {% for pill in active_pills %}
+        <a href="{{ pill.clear_url }}"
+            class="filter-pill badge bg-secondary text-decoration-none d-inline-flex align-items-center gap-1.5 py-1.5 px-2.5 rounded-pill border border-secondary"
+            style="font-size: 0.8rem; font-weight: 500;">
+            <span>{{ pill.label }}</span>
+            <i class="bi bi-x-circle-fill text-muted" style="font-size: 0.75rem;"></i>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <!-- #endregion -->
+</div>
+
+<!-- #region | LOGS TABLE -->
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <span class="text-secondary small fw-medium">
+        Showing {{ count(logs) }} of {{ totalLogs }} results
+    </span>
+
+    <!-- Action Style Switcher -->
+    <div class="d-flex align-items-center gap-2">
+        <span class="text-secondary"
+            style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8;">Action
+            Style:</span>
+        <div class="micro-segmented-control" id="actionStyleControl">
+            <button type="button" data-style="original">Original</button>
+            <button type="button" data-style="glassmorphic">Glassmorphic</button>
+            <button type="button" data-style="hover-inline">Hover Inline</button>
+        </div>
+    </div>
+</div>
+
+<div class="apple-table-container">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 style-glassmorphic" id="tblActivityLogs">
+            <thead>
+                <tr>
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('id', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            ID
+                            {{ getSortIcon('id', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc'))
+                            }}
+                        </a>
+                    </th>
+                    <th><input type="checkbox" id="selectAllLogs" title="Select All" class="form-check-input"></th>
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('subsidiary_id', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Subsidiary
+                            {{ getSortIcon('subsidiary_id', filters.get('sort_by', 'created_at'),
+                            filters.get('sort_dir', 'desc')) }}
+                        </a>
+                    </th>
+                    <!--                <th class="form-label-sm fw-semibold">-->
+                    <!--                    <a href="--><!--" class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">-->
+                    <!--                        Team -->
+                    <!--                    </a>-->
+                    <!--                </th>-->
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('project', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Project
+                            {{ getSortIcon('project', filters.get('sort_by', 'created_at'), filters.get('sort_dir',
+                            'desc')) }}
+                        </a>
+                    </th>
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('title', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Title
+                            {{ getSortIcon('title', filters.get('sort_by', 'created_at'), filters.get('sort_dir',
+                            'desc')) }}
+                        </a>
+                    </th>
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('ticket_id', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Ticket ID
+                            {{ getSortIcon('ticket_id', filters.get('sort_by', 'created_at'), filters.get('sort_dir',
+                            'desc')) }}
+                        </a>
+                    </th>
+                    {% if not hideAssigneeSystemWide %}
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('assignee', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Assignee
+                            {{ getSortIcon('assignee', filters.get('sort_by', 'created_at'), filters.get('sort_dir',
+                            'desc')) }}
+                        </a>
+                    </th>
+                    {% endif %}
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('status', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Status
+                            {{ getSortIcon('status', filters.get('sort_by', 'created_at'), filters.get('sort_dir',
+                            'desc')) }}
+                        </a>
+                    </th>
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('priority', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Priority
+                            {{ getSortIcon('priority', filters.get('sort_by', 'created_at'), filters.get('sort_dir',
+                            'desc')) }}
+                        </a>
+                    </th>
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('type', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Type
+                            {{ getSortIcon('type', filters.get('sort_by', 'created_at'), filters.get('sort_dir',
+                            'desc')) }}
+                        </a>
+                    </th>
+                    {% if isDWF %}
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('requested_by', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Requested By
+                            {{ getSortIcon('requested_by', filters.get('sort_by', 'created_at'), filters.get('sort_dir',
+                            'desc')) }}
+                        </a>
+                    </th>
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('campaign_status', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Campaign Status
+                            {{ getSortIcon('campaign_status', filters.get('sort_by', 'created_at'),
+                            filters.get('sort_dir', 'desc')) }}
+                        </a>
+                    </th>
+                    {% endif %}
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('size', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Size
+                            {{ getSortIcon('size', filters.get('sort_by', 'created_at'), filters.get('sort_dir',
+                            'desc')) }}
+                        </a>
+                    </th>
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('requested_date', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Requested Date
+                            {{ getSortIcon('requested_date', filters.get('sort_by', 'created_at'),
+                            filters.get('sort_dir', 'desc')) }}
+                        </a>
+                    </th>
+                    <th class="form-label-sm fw-semibold">
+                        <a href="{{ getSortUrl('start_date', filters.get('sort_by', 'created_at'), filters.get('sort_dir', 'desc')) }}"
+                            class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                            Start Date
+                            {{ getSortIcon('start_date', filters.get('sort_by', 'created_at'), filters.get('sort_dir',
+                            'desc')) }}
+                        </a>
+                    </th>
+                    <th class="form-label-sm fw-semibold text-dark text-center">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% if not logs %}
+                <tr>
+                    <td colspan="{{ (16 if isDWF else 14) - (1 if hideAssigneeSystemWide else 0) }}"
+                        class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-2 mb-2 d-block text-secondary" style="opacity: 0.5;"></i>
+                        <span class="fw-semibold">No tasks found</span>
+                        <p class="small text-secondary mb-0">Try adjusting your filters or search keywords.</p>
+                    </td>
+                </tr>
+                {% else %}
+                {% for log in logs %}
+                {% set subsidiary = Constants.ACTIVITY_LOG_SUBSIDIARIES.get(log['subsidiary_id'], 'Unknown') %}
+                {% set status_str = Constants.ACTIVITY_LOGS_STATUS.get(log['status'], 'Unknown') %}
+                {% set type = Constants.ACTIVITY_TYPES.get(log['type'], 'Unknown') %}
+                {% set team = Constants.TEAMS.get(log['team_id'], 'Unknown') %}
+                {% set project = log['project'] or 'Generic' %}
+                {% set assignee = Constants.USERS.get(log['assignee'], Constants.USER_SYSTEM_LABEL) %}
+                {% set size = Constants.ACTIVITY_SIZES.get(log['size'], 'Unknown') %}
+                <tr>
+                    <td>{{ log['id'] }}</td>
+                    <td>
+                        <input type="checkbox" name="log_ids[]" value="{{ log['id'] }}" class="form-check-input">
+                    </td>
+                    <td>
+                        <span class="badge" style="{{ random_bg_style(subsidiary) }}">
+                            {{ subsidiary }}
+                        </span>
+                    </td>
+                    <!--                        <td>-->
+                    <!--                            <span class="badge" style="--><!--">-->
+                    <!--                                -->
+                    <!--                            </span>-->
+                    <!--                        </td>-->
+                    <td>
+                        <a href="{{ site_url('tasks/project/' ~ rawurlencode(project)) }}" class="text-decoration-none"
+                            title="View Project Spreadsheet">
+                            <span class="badge" style="{{ random_bg_style(project) }}">
+                                {{ project }}
+                            </span>
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{{ site_url('tasks/view/' ~ log['id']) }}" class="apple-link-dark">
+                            {{ log['title'] }}
+                        </a>
+                        {% if log['labels'] %}
+                        <div class="mt-1 d-flex flex-wrap gap-1">
+                            {% for raw_lbl in log['labels'].split(',') %}
+                            {% set lbl = raw_lbl.strip() %}
+                            {% if lbl %}
+                            <a href="{{ site_url('tasks?keyword=' ~ lbl) }}" class="text-decoration-none"
+                                title="Filter by {{ lbl }}">
+                                <span
+                                    class="badge bg-primary text-white d-inline-flex align-items-center gap-1 rounded-pill"
+                                    style="font-size: 0.68rem; font-weight: 500; background-color: var(--color-badge-primary-bg) !important; color: var(--color-badge-primary-text) !important; border: 1px solid var(--color-badge-primary-border) !important; padding: 0.2em 0.5em; cursor: pointer; transition: transform 0.15s ease;"
+                                    onmouseover="this.style.transform='scale(1.05)';"
+                                    onmouseout="this.style.transform='scale(1)';">
+                                    <i class="bi bi-tag-fill text-primary"
+                                        style="font-size: 0.65rem; opacity: 0.7;"></i>
+                                    {{ lbl }}
+                                </span>
+                            </a>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log['ticket_id'] %}
+                        <a href="{{ Constants.JIRA_LINK ~ log['ticket_id'] }}" target="_blank"
+                            class="apple-link fw-bold">
+                            {{ log['ticket_id'] }}
+                        </a>
+                        {% elif log['mt_jira_ticket'] %}
+                        <a href="{{ Constants.MT_JIRA_LINK ~ log['mt_jira_ticket'] }}" target="_blank"
+                            class="apple-link fw-bold text-success">
+                            {{ log['mt_jira_ticket'] }}
+                        </a>
+                        {% else %}
+                        <span class="text-secondary small">-</span>
+                        {% endif %}
+                    </td>
+                    {% if not hideAssigneeSystemWide %}
+                    <td>
+                        <select class="badge status-select-badge {{ assignee_class(log['assignee']) }} assignee-select"
+                            data-log-id="{{ log['id'] }}">
+                            {% for val, lbl in Constants.USERS.items() %}
+                            <option value="{{ val }}" {{ 'selected' if log['assignee']==val else '' }}
+                                class="bg-white text-dark text-start">
+                                {{ lbl }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    {% endif %}
+                    <td>
+                        <select class="badge status-select-badge {{ status_activity_logs_class(log['status']) }}"
+                            data-log-id="{{ log['id'] }}">
+                            {% for val, lbl in Constants.ACTIVITY_LOGS_STATUS.items() %}
+                            <option value="{{ val }}" {{ 'selected' if log['status']==val else '' }}
+                                class="bg-white text-dark text-start">
+                                {{ lbl }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <select class="badge status-select-badge {{ priority_class(log['priority']) }} priority-select"
+                            data-log-id="{{ log['id'] }}">
+                            {% for val, lbl in Constants.PRIORITIES.items() %}
+                            <option value="{{ val }}" {{ 'selected' if log['priority']==val else '' }}
+                                class="bg-white text-dark text-start">
+                                {{ lbl }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <span class="badge" style="{{ random_bg_style(type) }}">
+                            {{ type }}
+                        </span>
+                    </td>
+                    {% if isDWF %}
+                    <td class="form-label-sm" style="width:max-content; white-space:nowrap;">
+                        {{ log['requested_by']|default('—') }}
+                    </td>
+                    <td>
+                        {% set cStatus = Constants.CAMPAIGN_STATUS.get(log['campaign_status'], '—') if
+                        log['campaign_status'] else '—' %}
+                        <span class="badge" style="{{ random_bg_style(cStatus) }}">
+                            {{ cStatus }}
+                        </span>
+                    </td>
+                    {% endif %}
+                    <td>
+                        <span class="badge {{ size_class(log['size']) }}" data-bs-toggle="tooltip"
+                            data-bs-placement="top" title="{{ size_description(log['size']) }}" style="cursor: help;">
+                            {{ size }}
+                        </span>
+                    </td>
+                    <td class="form-label-sm" style="width:max-content; white-space:nowrap;">
+                        {{ esc(date('d-m-Y', strtotime(log['requested_date']))) if log['requested_date'] else '<span
+                            class="text-secondary small">—</span>' }}
+                    </td>
+                    <td class="form-label-sm" style="width:max-content; white-space:nowrap;">
+                        {{ esc(date('d-m-Y', strtotime(log['start_date']))) if log['start_date'] else '<span
+                            class="text-secondary small">—</span>' }}
+                    </td>
+                    <td class="text-nowrap align-middle actions-cell">
+                        <!-- Original Style -->
+                        <div class="action-style-original-wrapper">
+                            <div class="dropdown">
+                                <button
+                                    class="apple-btn-secondary btn-sm dropdown-toggle px-2.5 py-1 d-inline-flex align-items-center gap-1"
+                                    type="button" id="actionsDropdown_{{ log['id'] }}" data-bs-toggle="dropdown"
+                                    aria-expanded="false" style="font-size: 0.8rem; border-radius: 9999px;">
+                                    Actions
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow"
+                                    aria-labelledby="actionsDropdown_{{ log['id'] }}"
+                                    style="border-radius: 10px; border: 1px solid var(--color-border-input); z-index: 1050;">
+                                    <li>
+                                        <a class="dropdown-item py-2" href="{{ site_url('tasks/view/' ~ log['id']) }}"
+                                            style="font-size: 0.85rem;">
+                                            <i class="bi bi-eye text-primary me-2"></i>View Details
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2"
+                                            href="{{ site_url('tasks/create?duplicate_id=' ~ log['id']) }}"
+                                            style="font-size: 0.85rem;">
+                                            <i class="bi bi-files text-info me-2"></i>Duplicate
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2" href="{{ site_url('tasks/update/' ~ log['id']) }}"
+                                            style="font-size: 0.85rem;">
+                                            <i class="bi bi-pencil-square text-warning me-2"></i>Edit Task
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Style A: Glassmorphic Dropdown -->
+                        <div class="action-style-glassmorphic-wrapper">
+                            <div class="dropdown">
+                                <button
+                                    class="action-trigger-dot d-inline-flex align-items-center justify-content-center"
+                                    type="button" id="actionsDropdownA_{{ log['id'] }}" data-bs-toggle="dropdown"
+                                    aria-expanded="false" title="Actions">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end glassmorphic-menu shadow"
+                                    aria-labelledby="actionsDropdownA_{{ log['id'] }}" style="z-index: 1050;">
+                                    <li>
+                                        <a class="dropdown-item py-2" href="{{ site_url('tasks/view/' ~ log['id']) }}">
+                                            <i class="bi bi-eye text-primary me-2"></i>View Details
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2"
+                                            href="{{ site_url('tasks/create?duplicate_id=' ~ log['id']) }}">
+                                            <i class="bi bi-files text-info me-2"></i>Duplicate
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2"
+                                            href="{{ site_url('tasks/update/' ~ log['id']) }}">
+                                            <i class="bi bi-pencil-square text-warning me-2"></i>Edit Task
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Style B: Hover-Revealed Inline Actions -->
+                        <div class="action-style-hover-inline-wrapper">
+                            <div class="hover-actions-container d-inline-flex align-items-center gap-1">
+                                <a href="{{ site_url('tasks/view/' ~ log['id']) }}" class="hover-action-btn btn-view"
+                                    data-bs-toggle="tooltip" data-bs-placement="top" title="View Details">
+                                    <i class="bi bi-eye-fill"></i>
+                                </a>
+                                <a href="{{ site_url('tasks/create?duplicate_id=' ~ log['id']) }}"
+                                    class="hover-action-btn btn-duplicate" data-bs-toggle="tooltip"
+                                    data-bs-placement="top" title="Duplicate Task">
+                                    <i class="bi bi-files"></i>
+                                </a>
+                                <a href="{{ site_url('tasks/update/' ~ log['id']) }}"
+                                    class="hover-action-btn btn-update" data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Edit Task">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% if pagination and pagination.pages > 1 %}
+    <div class="mt-4 d-flex justify-content-center">
+        <nav aria-label="Page navigation" class="apple-pagination-container">
+            <ul class="apple-pagination">
+                {% if pagination.has_prev %}
+                <li><a href="{{ url_for_page(1) }}" aria-label="First">&laquo;</a></li>
+                <li><a href="{{ url_for_page(pagination.prev_num) }}" aria-label="Previous">&lsaquo;</a></li>
+                {% endif %}
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if p %}
+                <li class="{% if p == pagination.page %}active{% endif %}">
+                    <a href="{{ url_for_page(p) }}">{{ p }}</a>
+                </li>
+                {% else %}
+                <li class="disabled"><span>&hellip;</span></li>
+                {% endif %}
+                {% endfor %}
+                {% if pagination.has_next %}
+                <li><a href="{{ url_for_page(pagination.next_num) }}" aria-label="Next">&rsaquo;</a></li>
+                <li><a href="{{ url_for_page(pagination.pages) }}" aria-label="Last">&raquo;</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+<!-- #endregion -->
+
+<!-- Floating Action Bar -->
+<div id="floatingActionBar" class="floating-action-bar">
+    <div class="floating-action-info">
+        <span id="floatingSelectedCount" class="count-badge">0</span>
+        <span>selected</span>
+    </div>
+    <div class="floating-action-divider"></div>
+
+    <button type="button" id="floatingBtnComplete" class="floating-btn-primary" title="Mark Selected as Complete">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>Mark Complete</span>
+    </button>
+
+    <div class="dropdown">
+        <button class="floating-btn-secondary dropdown-toggle" type="button" id="floatingDropdownProject"
+            data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-folder-plus"></i>
+            <span>Add to Project</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="floatingDropdownProject"
+            style="max-height: 250px; overflow-y: auto; z-index: 1060;">
+            {% for pName in project_names %}
+            {% if pName %}
+            <li><a class="dropdown-item py-2 floating-action-project-item" href="#" data-project="{{ pName }}">{{ pName
+                    }}</a></li>
+            {% endif %}
+            {% endfor %}
+            <li>
+                <hr class="dropdown-divider" style="background-color: rgba(255, 255, 255, 0.15);">
+            </li>
+            <li><a class="dropdown-item py-2 floating-action-project-new" href="#"><i
+                        class="bi bi-plus-circle me-2"></i>New Project...</a></li>
+        </ul>
+    </div>
+
+    <div class="dropdown">
+        <button class="floating-btn-secondary dropdown-toggle" type="button" id="floatingDropdownAssignee"
+            data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-person-plus"></i>
+            <span>Change Assignee</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="floatingDropdownAssignee"
+            style="max-height: 250px; overflow-y: auto; z-index: 1060;">
+            {% for uId, uName in Constants.USERS.items() %}
+            <li><a class="dropdown-item py-2 floating-action-assignee-item" href="#" data-assignee-id="{{ uId }}">{{
+                    uName }}</a></li>
+            {% endfor %}
+            <li><a class="dropdown-item py-2 floating-action-assignee-item" href="#"
+                    data-assignee-id="{{ Constants.USER_SYSTEM }}">{{ Constants.USER_SYSTEM_LABEL }}</a></li>
+        </ul>
+    </div>
+
+    <div class="floating-action-divider"></div>
+
+    <a href="#" id="floatingBtnDeselect" class="floating-btn-secondary" title="Deselect All">
+        <i class="bi bi-x-circle"></i>
+        <span>Deselect All</span>
+    </a>
+</div>
+
+<style>
+    /* Dashboard Count Cards Styling */
+    .dashboard-metric-link {
+        text-decoration: none !important;
+        color: inherit !important;
+        display: block;
+        height: 100%;
+    }
+
+    .dashboard-metric-card {
+        background: var(--color-card-bg);
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid var(--color-border-subtle);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        height: 100%;
+    }
+
+    .dashboard-metric-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-3px);
+    }
+
+    .dashboard-metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        transition: width 0.25s ease;
+    }
+
+    /* Specific Border Indicators */
+    .dashboard-metric-card.card-pending::before {
+        background-color: var(--color-badge-warning-text);
+    }
+
+    .dashboard-metric-card.card-in-progress::before {
+        background-color: var(--color-badge-blue-text);
+    }
+
+    .dashboard-metric-card.card-blocked::before {
+        background-color: var(--color-badge-danger-text);
+    }
+
+    .dashboard-metric-card.card-needs-attention::before {
+        background-color: var(--color-badge-orange-text);
+    }
+
+    .dashboard-metric-card.card-completed::before {
+        background-color: var(--color-badge-success-text);
+    }
+
+    /* Active Selected States */
+    .dashboard-metric-card.active {
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .dashboard-metric-card.card-pending.active {
+        background-color: var(--color-badge-warning-bg);
+        border-color: var(--color-badge-warning-border);
+    }
+
+    .dashboard-metric-card.card-in-progress.active {
+        background-color: var(--color-badge-blue-bg);
+        border-color: var(--color-badge-blue-border);
+    }
+
+    .dashboard-metric-card.card-blocked.active {
+        background-color: var(--color-badge-danger-bg);
+        border-color: var(--color-badge-danger-border);
+    }
+
+    .dashboard-metric-card.card-needs-attention.active {
+        background-color: var(--color-badge-orange-bg);
+        border-color: var(--color-badge-orange-border);
+    }
+
+    .dashboard-metric-card.card-completed.active {
+        background-color: var(--color-badge-success-bg);
+        border-color: var(--color-badge-success-border);
+    }
+
+    /* Expand the indicator bar slightly on hover/active */
+    .dashboard-metric-card:hover::before,
+    .dashboard-metric-card.active::before {
+        width: 8px;
+    }
+
+    .dashboard-metric-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .dashboard-metric-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .dashboard-metric-value {
+        font-size: 2.25rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--color-text-base);
+        margin: 0;
+    }
+
+    .dashboard-metric-desc {
+        font-size: 0.725rem;
+        color: var(--color-text-muted);
+        font-weight: 500;
+        margin-top: 4px;
+        line-height: 1.25;
+        transition: color 0.25s ease;
+    }
+
+    .dashboard-metric-card:hover .dashboard-metric-desc,
+    .dashboard-metric-card.active .dashboard-metric-desc {
+        color: var(--color-text-secondary);
+    }
+
+    .dashboard-metric-icon {
+        font-size: 1.75rem;
+        color: var(--color-text-muted);
+        opacity: 0.6;
+        transition: all 0.25s ease;
+    }
+
+    .dashboard-metric-card:hover .dashboard-metric-icon,
+    .dashboard-metric-card.active .dashboard-metric-icon {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    /* Icon Colors when active or hovered */
+    .dashboard-metric-card.card-pending:hover .dashboard-metric-icon,
+    .dashboard-metric-card.card-pending.active .dashboard-metric-icon {
+        color: var(--color-badge-warning-text);
+    }
+
+    .dashboard-metric-card.card-in-progress:hover .dashboard-metric-icon,
+    .dashboard-metric-card.card-in-progress.active .dashboard-metric-icon {
+        color: var(--color-badge-blue-text);
+    }
+
+    .dashboard-metric-card.card-blocked:hover .dashboard-metric-icon,
+    .dashboard-metric-card.card-blocked.active .dashboard-metric-icon {
+        color: var(--color-badge-danger-text);
+    }
+
+    .dashboard-metric-card.card-needs-attention:hover .dashboard-metric-icon,
+    .dashboard-metric-card.card-needs-attention.active .dashboard-metric-icon {
+        color: var(--color-badge-orange-text);
+    }
+
+    .dashboard-metric-card.card-completed:hover .dashboard-metric-icon,
+    .dashboard-metric-card.card-completed.active .dashboard-metric-icon {
+        color: var(--color-badge-success-text);
+    }
+
+    .selected-row td {
+        background-color: rgba(0, 113, 227, 0.05) !important;
+    }
+
+    .floating-action-bar {
+        position: fixed;
+        bottom: -80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(29, 29, 31, 0.92);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 40px;
+        padding: 10px 24px;
+        z-index: 1050;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+        transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+        opacity: 0;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .floating-action-bar.show {
+        bottom: 30px;
+        opacity: 1;
+    }
+
+    .floating-action-info {
+        color: #ffffff;
+        font-size: 0.95rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+
+    .floating-action-info .count-badge {
+        background: #0071e3;
+        color: #ffffff;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .floating-action-divider {
+        width: 1px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .floating-btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 30px;
+        padding: 8px 18px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        text-decoration: none !important;
+        white-space: nowrap;
+        transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+    }
+
+    .floating-btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: #ffffff;
+        transform: scale(1.02);
+    }
+
+    .floating-btn-secondary:active {
+        transform: scale(0.98);
+    }
+
+    .floating-btn-primary {
+        background: #0071e3;
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 30px;
+        padding: 8px 18px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        text-decoration: none !important;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+    }
+
+    .floating-btn-primary:hover {
+        background: #0077ed;
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        transform: scale(1.02);
+    }
+
+    .floating-btn-primary:active {
+        transform: scale(0.98);
+    }
+
+    .floating-action-bar button {
+        border: none;
+        outline: none;
+    }
+
+    .floating-action-bar .dropdown-menu {
+        border-radius: 12px !important;
+        background: rgba(30, 30, 30, 0.96) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .floating-action-bar .dropdown-item {
+        color: rgba(255, 255, 255, 0.8) !important;
+        font-size: 0.85rem;
+        transition: background-color 0.2s, color 0.2s;
+    }
+
+    .floating-action-bar .dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        color: #ffffff !important;
+    }
+
+    #tblActivityLogs tbody td.actions-cell,
+    #tblActivityLogs tbody td:not(.actions-cell):has(a:not([onclick]):not(.text-muted)) {
+        cursor: pointer;
+    }
+
+    #tblActivityLogs tbody td:not(.actions-cell):has(a:not([onclick]):not(.text-muted)):hover a:not([onclick]):not(.text-muted) {
+        color: var(--color-primary) !important;
+    }
+
+    /* Action Dropdown Style Experiment */
+    .actions-cell {
+        position: relative;
+        width: 90px;
+        min-width: 90px;
+        text-align: center;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+
+    .action-style-original-wrapper,
+    .action-style-glassmorphic-wrapper,
+    .action-style-hover-inline-wrapper {
+        display: none;
+    }
+
+    #tblActivityLogs.style-original .action-style-original-wrapper {
+        display: block;
+    }
+
+    #tblActivityLogs.style-glassmorphic .action-style-glassmorphic-wrapper {
+        display: block;
+    }
+
+    #tblActivityLogs.style-hover-inline .action-style-hover-inline-wrapper {
+        display: flex;
+        justify-content: center;
+    }
+
+    /* 1. Sleek Minimalist Dot Trigger Styling */
+    .action-trigger-dot {
+        background: transparent;
+        border: none;
+        color: var(--color-text-muted);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .action-trigger-dot:hover,
+    .action-trigger-dot[aria-expanded="true"] {
+        background-color: var(--color-secondary-bg);
+        color: var(--color-text-base);
+        transform: scale(1.05);
+    }
+
+    .action-trigger-dot:active {
+        transform: scale(0.95);
+    }
+
+    /* 2. Glassmorphic Dropdown Styling */
+    .glassmorphic-menu {
+        background: rgba(255, 255, 255, 0.82) !important;
+        backdrop-filter: blur(12px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+        border: 1px solid rgba(0, 0, 0, 0.08) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+        border-radius: 12px !important;
+        padding: 6px !important;
+        transform-origin: top right;
+        animation: dropdownFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes dropdownFadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.96) translateY(-4px);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .glassmorphic-menu .dropdown-item {
+        border-radius: 8px !important;
+        padding: 6px 12px !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        transition: background-color 0.15s ease, color 0.15s ease !important;
+        color: var(--color-text-base) !important;
+    }
+
+    .glassmorphic-menu .dropdown-item:hover {
+        background-color: var(--color-primary) !important;
+        color: #ffffff !important;
+    }
+
+    /* Ensure standard Bootstrap icons inside dropdown inherit color changes */
+    .glassmorphic-menu .dropdown-item:hover i {
+        color: #ffffff !important;
+    }
+
+    /* 3. Hover-Revealed Inline Action Buttons Styling */
+    .hover-actions-container {
+        opacity: 0;
+        transform: translateX(6px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    /* When the table row is hovered, show the actions */
+    #tblActivityLogs tr:hover .hover-actions-container {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    /* Also show them if select check is active or focus is inside */
+    #tblActivityLogs tr:focus-within .hover-actions-container,
+    #tblActivityLogs tr.selected-row .hover-actions-container {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .hover-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        color: var(--color-text-muted);
+        background-color: var(--color-secondary-bg);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        text-decoration: none !important;
+        font-size: 0.75rem;
+    }
+
+    .hover-action-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .hover-action-btn:active {
+        transform: scale(0.95);
+    }
+
+    .hover-action-btn.btn-view:hover {
+        background-color: var(--color-badge-primary-bg) !important;
+        color: var(--color-badge-primary-text) !important;
+    }
+
+    .hover-action-btn.btn-duplicate:hover {
+        background-color: var(--color-badge-purple-bg) !important;
+        color: var(--color-badge-purple-text) !important;
+    }
+
+    .hover-action-btn.btn-update:hover {
+        background-color: var(--color-badge-warning-bg) !important;
+        color: var(--color-badge-warning-text) !important;
+    }
+
+    /* Micro Segmented Control Styling */
+    .micro-segmented-control {
+        background-color: var(--color-secondary-bg);
+        border-radius: 20px;
+        padding: 3px;
+        display: inline-flex;
+        gap: 2px;
+        border: 1px solid rgba(0, 0, 0, 0.03);
+    }
+
+    .micro-segmented-control button {
+        border: none;
+        background: transparent;
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        border-radius: 15px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        outline: none;
+    }
+
+    .micro-segmented-control button:hover {
+        color: var(--color-text-base);
+    }
+
+    .micro-segmented-control button.active {
+        background-color: var(--color-card-bg);
+        color: var(--color-text-base);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .status-select-badge {
+        display: inline-block;
+        padding: 0.3em 1.6em 0.3em 0.6em !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+        border-radius: 6px !important;
+        cursor: pointer;
+        width: auto !important;
+        height: auto !important;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-repeat: no-repeat;
+        background-position: right 0.45rem center;
+        background-size: 8px 10px;
+        transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .status-select-badge:focus {
+        outline: none;
+        box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.25) !important;
+    }
+
+    /* Specific theme styles for Status and Priority */
+    .status-select-badge.bg-success {
+        background-color: var(--color-badge-success-bg) !important;
+        color: var(--color-badge-success-text) !important;
+        border: 1px solid var(--color-badge-success-border) !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%232E7D32' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    }
+
+    .status-select-badge.bg-danger {
+        background-color: var(--color-badge-danger-bg) !important;
+        color: var(--color-badge-danger-text) !important;
+        border: 1px solid var(--color-badge-danger-border) !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23C62828' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    }
+
+    .status-select-badge.bg-warning {
+        background-color: var(--color-badge-warning-bg) !important;
+        color: var(--color-badge-warning-text) !important;
+        border: 1px solid var(--color-badge-warning-border) !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23F57F17' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    }
+
+    .status-select-badge.bg-secondary {
+        background-color: var(--color-badge-secondary-bg) !important;
+        color: var(--color-badge-secondary-text) !important;
+        border: 1px solid var(--color-badge-secondary-border) !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2349494D' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    }
+
+    .status-select-badge.bg-info {
+        background-color: var(--color-badge-primary-bg) !important;
+        color: var(--color-badge-primary-text) !important;
+        border: 1px solid var(--color-badge-primary-border) !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%231565C0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    }
+
+    /* Specific theme styles for Assignee users */
+    .status-select-badge.bg-purple {
+        background-color: var(--color-badge-purple-bg) !important;
+        color: var(--color-badge-purple-text) !important;
+        border: 1px solid var(--color-badge-purple-border) !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%237B1FA2' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    }
+
+    .status-select-badge.bg-pink {
+        background-color: var(--color-badge-pink-bg) !important;
+        color: var(--color-badge-pink-text) !important;
+        border: 1px solid var(--color-badge-pink-border) !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23C2185B' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    }
+
+    .status-select-badge.bg-green {
+        background-color: var(--color-badge-green-bg) !important;
+        color: var(--color-badge-green-text) !important;
+        border: 1px solid var(--color-badge-green-border) !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%231B5E20' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    }
+
+    .status-select-badge.bg-blue {
+        background-color: var(--color-badge-blue-bg) !important;
+        color: var(--color-badge-blue-text) !important;
+        border: 1px solid var(--color-badge-blue-border) !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%230071E3' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    }
+
+    .status-select-badge.bg-orange {
+        background-color: var(--color-badge-orange-bg) !important;
+        color: var(--color-badge-orange-text) !important;
+        border: 1px solid var(--color-badge-orange-border) !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23E65100' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    }
+</style>
+
+<!-- Custom Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div id="toastNotification" class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true"
+        style="display: none; min-width: 280px; border-radius: 12px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,0.15); transition: opacity 0.3s ease;">
+        <div class="d-flex p-3 align-items-center">
+            <div class="me-2" id="toastIcon">
+                <!-- Icon will be set dynamically -->
+            </div>
+            <div class="toast-body flex-grow-1 fw-medium" id="toastMessage" style="font-size: 0.9rem;">
+                <!-- Message will be set dynamically -->
+            </div>
+            <button type="button" class="btn-close ms-auto" style="box-shadow: none; opacity: 0.6;"
+                onclick="$('#toastNotification').fadeOut(300);"></button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function getStatusGroup(statusId) {
+        statusId = parseInt(statusId);
+        if (statusId == 1 || statusId == 5) return 'pending';
+        if (statusId == 2 || statusId == 3 || statusId == 4) return 'in_progress';
+        if (statusId == 7) return 'blocked';
+        if (statusId == 6) return 'completed';
+        return null;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        $(document).ready(function () {
+            $('.select2-multiple').select2({
+                placeholder: "Select...",
+                allowClear: true,
+                width: '100%'
+            });
+            // Checkbox and Floating Action Bar Logic
+
+            const table = document.getElementById('tblActivityLogs');
+            const selectAllLogs = document.getElementById('selectAllLogs');
+            const selectedCountBadge = document.getElementById('selectedCountBadge');
+            const floatingActionBar = document.getElementById('floatingActionBar');
+            const floatingSelectedCount = document.getElementById('floatingSelectedCount');
+            const floatingBtnDeselect = document.getElementById('floatingBtnDeselect');
+
+            // Action Style Switcher logic
+            const actionStyleControl = document.getElementById('actionStyleControl');
+            if (actionStyleControl && table) {
+                const savedStyle = localStorage.getItem('tag_action_style') || 'glassmorphic';
+                table.classList.remove('style-original', 'style-glassmorphic', 'style-hover-inline');
+                table.classList.add(`style-${savedStyle}`);
+
+                actionStyleControl.querySelectorAll('button').forEach(btn => {
+                    if (btn.dataset.style == savedStyle) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+
+                actionStyleControl.addEventListener('click', function (e) {
+                    const btn = e.target.closest('button[data-style]');
+                    if (!btn) return;
+
+                    const selectedStyle = btn.dataset.style;
+                    actionStyleControl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    table.classList.remove('style-original', 'style-glassmorphic', 'style-hover-inline');
+                    table.classList.add(`style-${selectedStyle}`);
+
+                    localStorage.setItem('tag_action_style', selectedStyle);
+                });
+            }
+
+            const updateSelectAllState = () => {
+                if (!selectAllLogs || !table) return;
+                const total = table.querySelectorAll('input[name="log_ids[]"]').length;
+                const checked = table.querySelectorAll('input[name="log_ids[]"]:checked').length;
+
+                selectAllLogs.checked = (total > 0 && checked == total);
+                selectAllLogs.indeterminate = (checked > 0 && checked < total);
+            };
+
+            const toggleButton = () => {
+                if (!table) return;
+                const checkedCount = table.querySelectorAll('input[name="log_ids[]"]:checked').length;
+                const anyChecked = checkedCount > 0;
+
+                if (selectedCountBadge) {
+                    selectedCountBadge.textContent = `${checkedCount} selected`;
+                    selectedCountBadge.style.display = anyChecked ? 'inline-block' : 'none';
+                }
+
+                if (floatingActionBar) {
+                    if (anyChecked) {
+                        if (floatingSelectedCount) {
+                            floatingSelectedCount.textContent = checkedCount;
+                        }
+                        floatingActionBar.classList.add('show');
+                    } else {
+                        floatingActionBar.classList.remove('show');
+                    }
+                }
+
+                // Highlight selected rows
+                table.querySelectorAll('input[name="log_ids[]"]').forEach(cb => {
+                    const row = cb.closest('tr');
+                    if (row) {
+                        if (cb.checked) {
+                            row.classList.add('selected-row');
+                        } else {
+                            row.classList.remove('selected-row');
+                        }
+                    }
+                });
+            };
+
+            if (table) {
+                table.addEventListener('change', function (e) {
+                    if (e.target && e.target.name == 'log_ids[]') {
+                        toggleButton();
+                        updateSelectAllState();
+                    }
+                });
+
+                // Prevent text selection when shift-clicking the table rows
+                table.addEventListener('mousedown', function (e) {
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                    }
+                });
+
+                let lastChecked = null;
+
+                table.addEventListener('click', function (e) {
+                    const isCheckbox = e.target.matches('input[name="log_ids[]"]');
+
+                    const td = e.target.closest('td');
+                    if (td) {
+                        const clickedLinkOrBtn = e.target.closest('a, button, select, label, input');
+
+                        if (clickedLinkOrBtn && clickedLinkOrBtn != e.target.closest('input[name="log_ids[]"]')) {
+                            return;
+                        }
+
+                        // Redirect Actions Column cell clicks to target buttons
+                        if (td.classList.contains('actions-cell')) {
+                            if (!clickedLinkOrBtn) {
+                                let activeStyle = 'glassmorphic';
+                                if (table.classList.contains('style-original')) {
+                                    activeStyle = 'original';
+                                } else if (table.classList.contains('style-hover-inline')) {
+                                    activeStyle = 'hover-inline';
+                                }
+
+                                const wrapper = td.querySelector(`.action-style-${activeStyle}-wrapper`);
+                                if (wrapper) {
+                                    const toggleBtn = wrapper.querySelector('[data-bs-toggle="dropdown"]');
+                                    if (toggleBtn) {
+                                        toggleBtn.click();
+                                    } else {
+                                        const viewBtn = wrapper.querySelector('.hover-action-btn.btn-view');
+                                        if (viewBtn) viewBtn.click();
+                                    }
+                                }
+                            }
+                            return;
+                        }
+
+                        // Redirect clicks inside cells containing primary links (Jira Ticket ID, etc.)
+                        const primaryLink = td.querySelector('a:not([onclick]):not(.text-muted)');
+                        if (primaryLink) {
+                            if (!clickedLinkOrBtn) {
+                                if (primaryLink.target == '_blank') {
+                                    window.open(primaryLink.href, '_blank');
+                                } else {
+                                    primaryLink.click();
+                                }
+                            }
+                            return;
+                        }
+
+                        // Redirect clicks inside cells containing select dropdowns (Assignee, Status, Priority)
+                        const selectEl = td.querySelector('select');
+                        if (selectEl) {
+                            if (!clickedLinkOrBtn) {
+                                selectEl.focus();
+                            }
+                            return;
+                        }
+                    }
+
+                    const row = e.target.closest('tr');
+                    if (row && row.parentNode.tagName == 'TBODY') {
+                        const cb = row.querySelector('input[name="log_ids[]"]');
+                        if (cb) {
+                            if (!isCheckbox) {
+                                cb.checked = !cb.checked;
+                            }
+
+                            if (e.shiftKey && lastChecked && lastChecked != cb) {
+                                window.getSelection().removeAllRanges();
+
+                                const checkboxes = Array.from(table.querySelectorAll('input[name="log_ids[]"]'));
+                                const start = checkboxes.indexOf(cb);
+                                const end = checkboxes.indexOf(lastChecked);
+
+                                if (start != -1 && end != -1) {
+                                    const rangeStart = Math.min(start, end);
+                                    const rangeEnd = Math.max(start, end);
+
+                                    for (let i = rangeStart; i <= rangeEnd; i++) {
+                                        checkboxes[i].checked = cb.checked;
+                                    }
+                                }
+                            }
+
+                            lastChecked = cb;
+
+                            cb.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+                });
+            }
+
+            if (selectAllLogs) {
+                selectAllLogs.addEventListener('change', function () {
+                    if (!table) return;
+                    table.querySelectorAll('input[name="log_ids[]"]').forEach(cb => {
+                        cb.checked = selectAllLogs.checked;
+                    });
+                    lastChecked = null;
+                    toggleButton();
+                });
+            }
+
+            if (floatingBtnDeselect) {
+                floatingBtnDeselect.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (!table) return;
+                    table.querySelectorAll('input[name="log_ids[]"]').forEach(cb => {
+                        cb.checked = false;
+                    });
+                    if (selectAllLogs) {
+                        selectAllLogs.checked = false;
+                        selectAllLogs.indeterminate = false;
+                    }
+                    toggleButton();
+                    updateSelectAllState();
+                });
+            }
+
+            // Helper to get selected log IDs
+            function getSelectedLogIds() {
+                if (!table) return [];
+                const checkedCbs = table.querySelectorAll('input[name="log_ids[]"]:checked');
+                return Array.from(checkedCbs).map(cb => cb.value);
+            }
+
+            // Helper to run bulk AJAX operation
+            function runBulkOperation(url, data, successCallback) {
+                const logIds = getSelectedLogIds();
+                if (logIds.length == 0) {
+                    showToast('error', 'No tasks selected.');
+                    return;
+                }
+
+                // Show loading state
+                const originalOpacity = $('#floatingActionBar').css('opacity');
+                $('#floatingActionBar').css('opacity', '0.6');
+                $('#floatingActionBar button, #floatingActionBar a').prop('disabled', true).addClass('disabled');
+
+                const csrfToken = $('input[name="csrf_test_name"]').val();
+                const postData = Object.assign({
+                    csrf_test_name: csrfToken,
+                    log_ids: logIds
+                }, data);
+
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    data: postData,
+                    dataType: 'json',
+                    success: function (response) {
+                        // Restore state
+                        $('#floatingActionBar').css('opacity', originalOpacity);
+                        $('#floatingActionBar button, #floatingActionBar a').prop('disabled', false).removeClass('disabled');
+
+                        if (response.csrf_hash) {
+                            $('input[name="csrf_test_name"]').val(response.csrf_hash);
+                        }
+
+                        if (response.success) {
+                            showToast('success', response.message);
+                            if (successCallback) {
+                                successCallback(response);
+                            } else {
+                                setTimeout(function () {
+                                    window.location.reload();
+                                }, 1000);
+                            }
+                        } else {
+                            showToast('error', response.message || 'Bulk update failed.');
+                        }
+                    },
+                    error: function () {
+                        // Restore state
+                        $('#floatingActionBar').css('opacity', originalOpacity);
+                        $('#floatingActionBar button, #floatingActionBar a').prop('disabled', false).removeClass('disabled');
+                        showToast('error', 'An error occurred during bulk update.');
+                    }
+                });
+            }
+
+            // Mark Complete handler
+            const floatingBtnComplete = document.getElementById('floatingBtnComplete');
+            if (floatingBtnComplete) {
+                floatingBtnComplete.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (confirm('Are you sure you want to mark all selected tasks as Completed?')) {
+                        runBulkOperation('{{ site_url("tasks/bulk-status") }}', {
+                            status: {{ Constants.ACTIVITY_LOGS_STATUS_COMPLETED }}
+                });
+            }
+        });
+    }
+
+            // Add to Project handlers
+            $(document).on('click', '.floating-action-project-item', function (e) {
+        e.preventDefault();
+        const project = $(this).data('project');
+        if (project) {
+            runBulkOperation('{{ site_url("tasks/bulk-project") }}', {
+                project: project
+            });
+        }
+    });
+
+    $(document).on('click', '.floating-action-project-new', function (e) {
+        e.preventDefault();
+        const project = prompt("Enter new project name:");
+        if (project && project.trim() != '') {
+            runBulkOperation('{{ site_url("tasks/bulk-project") }}', {
+                project: project.trim()
+            });
+        }
+    });
+
+    // Change Assignee handlers
+    $(document).on('click', '.floating-action-assignee-item', function (e) {
+        e.preventDefault();
+        const assigneeId = $(this).data('assignee-id');
+        runBulkOperation('{{ site_url("tasks/bulk-assignee") }}', {
+            assignee: assigneeId
+        });
+    });
+
+    let previousValue = '';
+
+    // Cache previous status value when dropdown is focused
+    $('.status-select-badge').on('focus', function () {
+        previousValue = $(this).val();
+    }).on('change', function () {
+        const dropdown = $(this);
+        const logId = dropdown.data('log-id');
+        const newValue = dropdown.val();
+        const csrfToken = $('input[name="csrf_test_name"]').val();
+
+        let url = '';
+        let postData = { csrf_test_name: csrfToken };
+
+        if (dropdown.hasClass('assignee-select')) {
+            url = '{{ site_url("tasks/update-assignee") }}/' + logId;
+            postData.assignee = newValue;
+        } else if (dropdown.hasClass('priority-select')) {
+            url = '{{ site_url("tasks/update-priority") }}/' + logId;
+            postData.priority = newValue;
+        } else {
+            url = '{{ site_url("tasks/update-status") }}/' + logId;
+            postData.status = newValue;
+        }
+
+        // Low opacity to indicate loading state
+        dropdown.css('opacity', '0.6');
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: postData,
+            dataType: 'json',
+            success: function (response) {
+                dropdown.css('opacity', '1');
+                if (response.success) {
+                    // Clear old status badge classes and apply new one
+                    dropdown.removeClass('bg-secondary bg-warning bg-info bg-success bg-danger bg-purple bg-pink bg-green bg-blue bg-orange text-white text-dark');
+                    dropdown.addClass(response.status_class);
+
+                    // Success toast notification
+                    showToast('success', response.message);
+
+                    // Dynamic counts update
+                    if (!dropdown.hasClass('assignee-select') && !dropdown.hasClass('priority-select')) {
+                        const oldGroup = getStatusGroup(previousValue);
+                        const newGroup = getStatusGroup(newValue);
+                        if (oldGroup && newGroup && oldGroup != newGroup) {
+                            const oldCardValEl = document.querySelector(`.dashboard-metric-card.card-${oldGroup} .dashboard-metric-value`);
+                            const newCardValEl = document.querySelector(`.dashboard-metric-card.card-${newGroup} .dashboard-metric-value`);
+                            if (oldCardValEl) {
+                                const oldVal = parseInt(oldCardValEl.textContent) || 0;
+                                oldCardValEl.textContent = Math.max(0, oldVal - 1);
+                            }
+                            if (newCardValEl) {
+                                const newVal = parseInt(newCardValEl.textContent) || 0;
+                                newCardValEl.textContent = newVal + 1;
+                            }
+                        }
+                    }
+
+                    previousValue = newValue; // update cached previous value
+                } else {
+                    // Revert to previous value
+                    dropdown.val(previousValue);
+                    showToast('error', response.message || 'Failed to update.');
+                }
+
+                // Update CSRF token in the document
+                if (response.csrf_hash) {
+                    $('input[name="csrf_test_name"]').val(response.csrf_hash);
+                }
+            },
+            error: function (xhr, status, error) {
+                dropdown.css('opacity', '1');
+                dropdown.val(previousValue);
+                showToast('error', 'An error occurred while updating.');
+            }
+        });
+    });
+
+    // Reusable Premium Toast Notification function
+    function showToast(type, message) {
+        const toast = $('#toastNotification');
+        const messageEl = $('#toastMessage');
+        const iconEl = $('#toastIcon');
+
+        messageEl.text(message);
+
+        toast.removeClass('bg-success bg-danger bg-warning text-dark text-white border-0');
+
+        if (type == 'success') {
+            toast.css({
+                'background-color': 'var(--color-alert-success-bg)',
+                'color': 'var(--color-alert-success-text)',
+                'border': '1px solid rgba(29, 138, 68, 0.2)'
+            });
+            iconEl.html('<i class="bi bi-check-circle-fill fs-5" style="color: var(--color-alert-success-text);"></i>');
+        } else if (type == 'error') {
+            toast.css({
+                'background-color': 'var(--color-alert-danger-bg)',
+                'color': 'var(--color-alert-danger-text)',
+                'border': '1px solid rgba(222, 53, 53, 0.2)'
+            });
+            iconEl.html('<i class="bi bi-exclamation-triangle-fill fs-5" style="color: var(--color-alert-danger-text);"></i>');
+        } else {
+            toast.css({
+                'background-color': 'var(--color-alert-warning-bg)',
+                'color': 'var(--color-alert-warning-text)',
+                'border': '1px solid rgba(180, 107, 0, 0.2)'
+            });
+            iconEl.html('<i class="bi bi-exclamation-circle-fill fs-5" style="color: var(--color-alert-warning-text);"></i>');
+        }
+
+        toast.fadeIn(300);
+
+        if (window.toastTimeout) {
+            clearTimeout(window.toastTimeout);
+        }
+        window.toastTimeout = setTimeout(function () {
+            toast.fadeOut(300);
+        }, 4000);
+    }
+        });
+
+    // AI Welcome Message Fetch
+    const punchlines = [
+        "Waking up the AI... (it takes a moment to be this smart) ☕",
+        "Bribing the neural networks with digital cookies... 🍪",
+        "Consulting the digital oracle... 🔮",
+        "Brewing some coffee for the AI... ☕",
+        "Loading artificial enthusiasm... 🔋",
+        "Teaching the AI how to say hello... 🤖"
+    ];
+    document.getElementById('aiLoadingText').innerHTML = '<em>' + punchlines[Math.floor(Math.random() * punchlines.length)] + '</em>';
+
+    fetch('{{ site_url('tasks/welcome-message') }}', {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.success && data.message) {
+                const bannerRow = document.getElementById('welcomeBannerRow');
+                const card = document.getElementById('aiWelcomeCard');
+                const icon = document.getElementById('aiWelcomeIcon');
+                const textElement = document.getElementById('aiWelcomeMessageText');
+
+                const color = data.user_color || '#0071e3';
+                let r = 0, g = 113, b = 227;
+                if (color.match(/^#[0-9a-f]{6}$/i)) {
+                    r = parseInt(color.slice(1, 3), 16);
+                    g = parseInt(color.slice(3, 5), 16);
+                    b = parseInt(color.slice(5, 7), 16);
+                }
+
+                card.style.borderLeftColor = color;
+                card.style.background = `linear-gradient(135deg, rgba(${r},${g},${b},0.08) 0%, #ffffff 100%)`;
+                icon.style.color = color;
+                icon.innerHTML = '<i class="bi bi-stars"></i>';
+
+                textElement.innerHTML = escapeHtml(data.message).replace(/\n/g, '<br>');
+
+                textElement.style.opacity = 0;
+                let opacity = 0;
+                const fadeIn = setInterval(() => {
+                    if (opacity >= 1) {
+                        clearInterval(fadeIn);
+                    }
+                    textElement.style.opacity = opacity;
+                    opacity += 0.05;
+                }, 20);
+            } else {
+                document.getElementById('welcomeBannerRow').style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching welcome message:', error);
+            document.getElementById('welcomeBannerRow').style.display = 'none';
+        });
+    });
+</script>
+
+{% endblock %}
+
+{% block chatbot %}
+{% with chatTitle='Task Assistant', chatEndpoint=site_url('tasks/chat-with-ai'),
+historyEndpoint=site_url('tasks/ai-chat-history'), conversationEndpoint=site_url('tasks/ai-conversation/') %}
+{% include 'components/chatbot.html' %}
+{% endwith %}
+{% endblock %}

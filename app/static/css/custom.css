@@ -1,0 +1,1299 @@
+:root {
+    /* Fonts */
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* Base Theme Colors */
+    --color-bg-base: #F5F5F7;
+    --color-text-base: #1D1D1F;
+    --color-text-secondary: #49494D;
+    --color-text-muted: #86868B;
+    --color-border-subtle: rgba(0, 0, 0, 0.05);
+    --color-border-input: #D1D1D6;
+
+    /* Interactive / Accent Colors */
+    --color-primary: #0071E3;
+    --color-primary-hover: #0077ED;
+    --color-primary-active: #005bb5;
+    --color-primary-focus-shadow: rgba(0, 113, 227, 0.25);
+    
+    --color-secondary-bg: #E8E8ED;
+    --color-secondary-hover: #D1D1D6;
+
+    /* Soft Status Badge Colors */
+    --color-badge-success-bg: #E8F5E9;
+    --color-badge-success-text: #2E7D32;
+    --color-badge-success-border: #C8E6C9;
+
+    --color-badge-danger-bg: #FFEBEE;
+    --color-badge-danger-text: #C62828;
+    --color-badge-danger-border: #FFCDD2;
+
+    --color-badge-warning-bg: #FFF8E1;
+    --color-badge-warning-text: #F57F17;
+    --color-badge-warning-border: #FFECB3;
+
+    --color-badge-secondary-bg: #F5F5F7;
+    --color-badge-secondary-text: #49494D;
+    --color-badge-secondary-border: #E8E8ED;
+
+    --color-badge-primary-bg: #E3F2FD;
+    --color-badge-primary-text: #1565C0;
+    --color-badge-primary-border: #BBDEFB;
+
+    --color-badge-purple-bg: #F3E5F5;
+    --color-badge-purple-text: #7B1FA2;
+    --color-badge-purple-border: #EDE7F6;
+
+    --color-badge-pink-bg: #FCE4EC;
+    --color-badge-pink-text: #C2185B;
+    --color-badge-pink-border: #F8BBD0;
+
+    --color-badge-teal-bg: #E0F2F1;
+    --color-badge-teal-text: #00897B;
+    --color-badge-teal-border: #B2DFDB;
+
+    --color-badge-orange-bg: #FFF3E0;
+    --color-badge-orange-text: #E65100;
+    --color-badge-orange-border: #FFCCBC;
+
+    --color-badge-green-bg: #E8F5E9;
+    --color-badge-green-text: #1B5E20;
+    --color-badge-green-border: #C8E6C9;
+
+    --color-badge-indigo-bg: #E8EAF6;
+    --color-badge-indigo-text: #303F9F;
+    --color-badge-indigo-border: #C5CAE9;
+
+    --color-badge-blue-bg: #E3F2FD;
+    --color-badge-blue-text: #0071E3;
+    --color-badge-blue-border: #B2EBF2;
+
+    /* Apple-like Alert Colors */
+    --color-alert-success-bg: #F4FBF6;
+    --color-alert-success-text: #1D8A44;
+    
+    --color-alert-danger-bg: #FFF4F4;
+    --color-alert-danger-text: #DE3535;
+
+    --color-alert-warning-bg: #FFFBF0;
+    --color-alert-warning-text: #B46B00;
+
+    --color-alert-info-bg: #F4F9FF;
+    --color-alert-info-text: #0071E3;
+
+    /* UI Element Details */
+    --color-card-bg: #ffffff;
+    --color-table-hover-bg: #F4F9FF;
+    --color-table-hover-inset: rgba(0, 113, 227, 0.02);
+
+    /* Shadows */
+    --shadow-xs: 0 2px 8px rgba(0, 0, 0, 0.02);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --shadow-popover: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    /* Transitions */
+    --transition-fast: 0.2s ease;
+    --transition-medium: 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* ==========================================
+   1. Base & Reset Styles
+   ========================================== */
+body {
+    font-family: var(--font-sans);
+    background-color: var(--color-bg-base);
+    color: var(--color-text-base);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    zoom: 0.9;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--color-text-base);
+}
+
+/* ==========================================
+   2. Layout & Navigation Components
+   ========================================== */
+.sticky-nav-bar {
+    position: sticky;
+    top: 16px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    z-index: 1050;
+    max-width: 98%;
+    box-shadow: var(--shadow-lg);
+}
+
+.sticky-nav {
+    z-index: 1050;
+}
+
+/* Apple Segmented Control (Navbar) */
+.apple-segmented-control {
+    background-color: var(--color-secondary-bg);
+    border-radius: 10px;
+    padding: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.apple-segmented-control .nav-item {
+    margin: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+}
+
+.apple-segmented-control .nav-link {
+    width: auto;
+    padding: 6px 16px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    border-radius: 8px;
+    transition: color var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+    line-height: 1.3;
+}
+
+.apple-segmented-control .nav-link:hover {
+    color: var(--color-text-base);
+}
+
+.apple-segmented-control .nav-link.active {
+    color: var(--color-text-base) !important;
+    background-color: transparent !important;
+}
+
+.sliding-glass-pill {
+    position: absolute;
+    top: 4px;
+    left: 0;
+    height: calc(100% - 8px);
+    background-color: var(--color-card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    z-index: 0;
+    pointer-events: none;
+    transition: transform var(--transition-medium), width var(--transition-medium), top var(--transition-medium), height var(--transition-medium);
+    opacity: 0; /* Hidden initially until JS sets it */
+}
+
+/* Modal and Backdrop Full-Screen Coverage Fix (especially when zoom is applied to body) */
+.modal-backdrop {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100vw !important;
+    min-height: 100vh !important;
+    z-index: 1050 !important;
+}
+
+.modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ==========================================
+   3. UI & Utility Classes
+   ========================================== */
+.apple-card {
+    background: var(--color-card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    padding: 24px;
+    border: 1px solid var(--color-border-subtle);
+}
+
+.apple-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color var(--transition-fast), text-decoration var(--transition-fast);
+}
+
+.apple-link:hover {
+    color: var(--color-primary-active);
+    text-decoration: none;
+}
+
+.apple-link-dark {
+    color: var(--color-text-base);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color var(--transition-fast);
+}
+
+.apple-link-dark:hover {
+    color: var(--color-primary);
+}
+
+/* Bootstrap Color Helpers Extensions */
+.bg-purple { background-color: #6f42c1 !important; }
+.bg-teal   { background-color: #20c997 !important; }
+.bg-orange { background-color: #fd7e14 !important; }
+.bg-pink   { background-color: #d63384 !important; }
+
+/* Dev Mode Badge styling */
+.dev-mode-badge-container {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.dev-mode-badge {
+    background: rgba(255, 193, 7, 0.85) !important;
+    color: #000 !important;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    padding: 0.4em 0.8em;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+/* ==========================================
+   4. Buttons & Controls
+   ========================================== */
+.apple-btn-primary,
+.apple-btn-secondary {
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 9999px !important; /* Globally capsule styled */
+    border: none;
+    font-weight: 500;
+    padding: 0.5rem 1.25rem; /* Balanced horizontal padding */
+    font-size: 1rem;
+    transition: background-color var(--transition-fast), transform 0.1s ease;
+    line-height: 1.5;
+    vertical-align: middle;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.apple-btn-primary.btn-sm,
+.apple-btn-secondary.btn-sm {
+    padding: 0.25rem 1rem !important; /* Balanced small capsule padding */
+    font-size: 0.875rem;
+    border-radius: 9999px !important;
+}
+
+.apple-btn-primary {
+    background-color: var(--color-primary);
+    color: #ffffff;
+}
+
+.apple-btn-primary:hover {
+    background-color: var(--color-primary-hover);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.apple-btn-primary:active {
+    transform: scale(0.98);
+}
+
+.apple-btn-secondary {
+    background-color: var(--color-secondary-bg);
+    color: var(--color-text-base);
+}
+
+.apple-btn-secondary:hover {
+    background-color: var(--color-secondary-hover);
+    color: var(--color-text-base);
+    text-decoration: none;
+}
+
+.apple-btn-secondary:active {
+    transform: scale(0.98);
+}
+
+
+
+/* Control bar */
+.apple-control-bar {
+    background: var(--color-card-bg);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-xs);
+}
+
+/* Metric Cards */
+.apple-metric-card {
+    background: var(--color-card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-xs);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.apple-metric-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.apple-metric-label {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.apple-metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+/* ==========================================
+   5. Forms & Custom Controls
+   ========================================== */
+.form-label-sm {
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+.form-label-xs {
+    font-size: 0.75rem;
+    font-weight: 400;
+}
+
+.form-select-xs,
+.form-control-xs {
+    min-height: calc(1.5rem + 2px);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-input);
+    background-color: var(--color-card-bg);
+    color: var(--color-text-base);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-select-xs:focus,
+.form-control-xs:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.25rem var(--color-primary-focus-shadow);
+    outline: none;
+}
+
+/* Modern Apple Textarea styles */
+.apple-textarea {
+    background-color: #F5F5F7 !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
+    font-size: 0.9rem !important;
+    color: var(--color-text-base) !important;
+    resize: none !important; /* Keep it clean */
+    overflow-y: hidden !important; /* Managed by auto-resize JS */
+    transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast) !important;
+    min-height: 80px;
+    line-height: 1.5 !important;
+}
+
+.apple-textarea:focus {
+    background-color: #ffffff !important;
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 4px var(--color-primary-focus-shadow) !important;
+    outline: none !important;
+}
+
+/* Select2 Apple UI Overrides */
+.select2-container--default .select2-selection--single {
+    height: 31px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-input);
+    font-size: 0.875rem;
+    background-color: var(--color-card-bg);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    display: flex;
+    align-items: center;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--color-text-base);
+    line-height: normal;
+    padding-left: 0.5rem;
+    padding-right: 24px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 100%;
+    right: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.25rem var(--color-primary-focus-shadow);
+    outline: none;
+}
+
+.select2-dropdown {
+    border: 1px solid var(--color-border-input);
+    border-radius: 8px;
+    box-shadow: var(--shadow-popover);
+    overflow: hidden;
+    font-size: 0.875rem;
+    z-index: 1060;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected],
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+/* ==========================================
+   6. Tables & Data Display
+   ========================================== */
+.table {
+    font-size: 0.875rem;
+}
+
+.table th, .table td {
+    padding: 0.42rem 0.5rem;
+    vertical-align: middle;
+}
+
+.apple-table-container {
+    background: var(--color-card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-xs);
+    overflow: hidden;
+}
+
+/* Centralized flat Apple-like border style for tables */
+.apple-table,
+.apple-table-container table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    min-width: 100%;
+}
+
+/* Stunning Table Hover */
+.table-hover>tbody>tr>td,
+.table-hover>tbody>tr>th {
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.table-hover>tbody>tr:hover>td,
+.table-hover>tbody>tr:hover>th {
+    background-color: var(--color-table-hover-bg) !important;
+    color: var(--color-text-base) !important;
+    box-shadow: inset 0 0 0 9999px var(--color-table-hover-inset);
+}
+
+.group-hover-container a:first-child:hover {
+    color: var(--color-primary) !important;
+}
+
+.group-hover-container a.text-muted:hover {
+    color: var(--color-text-base) !important;
+}
+
+table.file-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+table.file-table th:nth-child(1) {
+    width: 150px;
+}
+
+table.file-table th:nth-child(2),
+table.file-table td:nth-child(2) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+table.file-table td:nth-child(2) {
+    white-space: normal;
+    word-break: manual;
+}
+
+table.file-table th:nth-child(3) {
+    width: 120px;
+}
+
+.no-border td,
+.no-border th {
+    border-bottom: none !important;
+}
+
+/* ==========================================
+   7. Badges, Alerts & Pagination
+   ========================================== */
+/* Soft Badges Override */
+.badge {
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+
+.badge.bg-success,
+.badge.bg-teal {
+    background-color: var(--color-badge-success-bg) !important;
+    color: var(--color-badge-success-text) !important;
+    border: 1px solid var(--color-badge-success-border);
+}
+
+.badge.bg-danger,
+.badge.bg-pink {
+    background-color: var(--color-badge-danger-bg) !important;
+    color: var(--color-badge-danger-text) !important;
+    border: 1px solid var(--color-badge-danger-border);
+}
+
+.badge.bg-warning,
+.badge.bg-orange {
+    background-color: var(--color-badge-warning-bg) !important;
+    color: var(--color-badge-warning-text) !important;
+    border: 1px solid var(--color-badge-warning-border);
+}
+
+.badge.bg-secondary {
+    background-color: var(--color-badge-secondary-bg) !important;
+    color: var(--color-badge-secondary-text) !important;
+    border: 1px solid var(--color-badge-secondary-border);
+}
+
+.badge.bg-primary {
+    background-color: var(--color-badge-primary-bg) !important;
+    color: var(--color-badge-primary-text) !important;
+    border: 1px solid var(--color-badge-primary-border);
+}
+
+.bubble-purple,
+.badge.bg-purple {
+    background-color: var(--color-badge-purple-bg) !important;
+    color: var(--color-badge-purple-text) !important;
+    border: 1px solid var(--color-badge-purple-border);
+}
+
+.badge.bg-green {
+    background-color: var(--color-badge-green-bg) !important;
+    color: var(--color-badge-green-text) !important;
+    border: 1px solid var(--color-badge-green-border);
+}
+
+.badge.bg-blue {
+    background-color: var(--color-badge-blue-bg) !important;
+    color: var(--color-badge-blue-text) !important;
+    border: 1px solid var(--color-badge-blue-border);
+}
+
+/* Stunning Apple-Like Alerts */
+.alert {
+    border: none;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04), inset 0 0 0 1px rgba(0, 0, 0, 0.02);
+    letter-spacing: -0.1px;
+}
+
+.alert-success {
+    background-color: var(--color-alert-success-bg) !important;
+    color: var(--color-alert-success-text) !important;
+}
+
+.alert-danger {
+    background-color: var(--color-alert-danger-bg) !important;
+    color: var(--color-alert-danger-text) !important;
+}
+
+.alert-warning {
+    background-color: var(--color-alert-warning-bg) !important;
+    color: var(--color-alert-warning-text) !important;
+}
+
+.alert-info {
+    background-color: var(--color-alert-info-bg) !important;
+    color: var(--color-alert-info-text) !important;
+}
+
+/* Apple Pagination */
+.apple-pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.apple-pagination {
+    display: flex;
+    padding-left: 0;
+    list-style: none;
+    background-color: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 4px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 0;
+}
+
+.apple-pagination li {
+    margin: 0 2px;
+}
+
+.apple-pagination li a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 10px;
+    color: var(--color-text-base);
+    text-decoration: none;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+}
+
+.apple-pagination li a:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.apple-pagination li.active a {
+    background-color: var(--color-primary);
+    color: #FFFFFF;
+    box-shadow: 0 2px 5px rgba(0, 113, 227, 0.3);
+}
+
+.apple-pagination li.active a:hover {
+    background-color: var(--color-primary-hover);
+}
+
+/* ==========================================
+   8. Custom Third-Party Component Overrides
+   ========================================== */
+
+/* Flatpickr Calendar Apple Theme */
+.flatpickr-calendar {
+    font-family: var(--font-sans) !important;
+    background: var(--color-card-bg) !important;
+    border: 1px solid var(--color-border-input) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--shadow-popover) !important;
+    padding: 6px !important;
+    box-sizing: content-box !important;
+}
+
+.flatpickr-calendar::before, 
+.flatpickr-calendar::after {
+    display: none !important; /* Clean layout without pointer triangles */
+}
+
+.flatpickr-months .flatpickr-month {
+    color: var(--color-text-base) !important;
+    fill: var(--color-text-base) !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    font-weight: 600 !important;
+    color: var(--color-text-base) !important;
+    font-size: 0.95rem !important;
+}
+
+.flatpickr-current-month input.cur-year {
+    font-weight: 600 !important;
+    color: var(--color-text-base) !important;
+}
+
+.flatpickr-calendar .flatpickr-weekday {
+    color: var(--color-text-muted) !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+}
+
+.flatpickr-day {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    color: var(--color-text-base) !important;
+    font-size: 0.875rem !important;
+    transition: background-color var(--transition-fast), color var(--transition-fast) !important;
+}
+
+.flatpickr-day:hover, 
+.flatpickr-day:focus {
+    background: var(--color-secondary-bg) !important;
+    border-color: transparent !important;
+}
+
+.flatpickr-day.today {
+    border-color: var(--color-primary) !important;
+    color: var(--color-primary) !important;
+    font-weight: 600 !important;
+}
+
+.flatpickr-day.today:hover {
+    background: var(--color-secondary-bg) !important;
+    color: var(--color-primary) !important;
+}
+
+.flatpickr-day.selected, 
+.flatpickr-day.selected:focus, 
+.flatpickr-day.selected:hover {
+    background: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* Select2 Search Field Theme Adjustments */
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    border: 1px solid var(--color-border-input) !important;
+    border-radius: 6px !important;
+    padding: 6px 10px !important;
+    outline: none !important;
+    font-size: 0.875rem !important;
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field:focus {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 3px var(--color-primary-focus-shadow) !important;
+}
+
+/* Summernote Editor Custom Theme (Apple-like styling) */
+.note-editor.note-frame {
+    border: 1px solid var(--color-border-input) !important;
+    border-radius: 12px !important;
+    background-color: var(--color-card-bg) !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+}
+
+.note-editor .note-toolbar {
+    background-color: var(--color-bg-base) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    padding: 8px 12px !important;
+}
+
+.note-editor .note-btn {
+    background-color: var(--color-card-bg) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-radius: 6px !important;
+    color: var(--color-text-secondary) !important;
+    font-size: 0.85rem !important;
+    padding: 4px 8px !important;
+    box-shadow: none !important;
+    transition: background-color var(--transition-fast) !important;
+}
+
+.note-editor .note-btn:hover {
+    background-color: var(--color-secondary-bg) !important;
+    color: var(--color-text-base) !important;
+}
+
+.note-editor .note-btn.active {
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: white !important;
+}
+
+.note-editor .note-editable {
+    background-color: var(--color-card-bg) !important;
+    color: var(--color-text-base) !important;
+    font-family: var(--font-sans) !important;
+    font-size: 0.9rem !important;
+    padding: 16px !important;
+    line-height: 1.6 !important;
+}
+
+.note-editor .note-editable a {
+    color: var(--color-primary) !important;
+    text-decoration: underline !important;
+}
+
+.note-editor .note-placeholder {
+    padding: 16px !important;
+    font-family: var(--font-sans) !important;
+    font-size: 0.9rem !important;
+    color: var(--color-text-muted) !important;
+}
+
+.note-editor .note-statusbar {
+    background-color: var(--color-bg-base) !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.note-editor .note-statusbar .note-resizebar {
+    padding-top: 4px !important;
+}
+
+.note-editor .note-dropdown-menu {
+    border: 1px solid var(--color-border-input) !important;
+    border-radius: 8px !important;
+    box-shadow: var(--shadow-popover) !important;
+    overflow: hidden !important;
+}
+
+.note-editor .note-dropdown-item {
+    font-size: 0.875rem !important;
+    padding: 6px 12px !important;
+    transition: background-color var(--transition-fast) !important;
+}
+
+.note-editor .note-dropdown-item:hover {
+    background-color: var(--color-secondary-bg) !important;
+}
+
+.apple-segmented-control .nav-item.dropdown {
+    position: relative !important;
+}
+
+/* Premium Navigation Dropdown Styling */
+.apple-segmented-control .dropdown-toggle::after {
+    display: none !important;
+}
+
+.apple-segmented-control .dropdown-menu {
+    border-radius: 12px !important;
+    background-color: var(--color-card-bg) !important;
+    border: 1px solid var(--color-border-input) !important;
+    padding: 6px 0 !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+    min-width: 155px !important;
+    position: absolute !important;
+    top: calc(100% + 4px) !important;
+    left: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+    z-index: 1060 !important;
+}
+
+/* Hover bridge between nav link and dropdown menu so mouse transition never breaks */
+.apple-segmented-control .dropdown-menu::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: transparent;
+}
+
+.apple-segmented-control .dropdown-item {
+    color: var(--color-text-secondary) !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    padding: 8px 16px !important;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.apple-segmented-control .dropdown-item:hover {
+    background-color: var(--color-secondary-bg) !important;
+    color: var(--color-text-base) !important;
+}
+
+.apple-segmented-control .dropdown-item.active {
+    background-color: var(--color-secondary-bg) !important;
+    color: var(--color-primary) !important;
+    font-weight: 600 !important;
+}
+
+/* Show navigation dropdown on hover for desktop screens */
+@media (min-width: 992px) {
+    .apple-segmented-control .nav-item.dropdown:hover > .dropdown-menu,
+    .apple-segmented-control .nav-item.dropdown > .dropdown-menu.show {
+        display: block !important;
+        opacity: 1;
+        visibility: visible;
+        margin-top: 0 !important;
+    }
+}
+
+/* ==========================================
+   9. Custom Theme Dialogs (Alert/Confirm)
+   ========================================== */
+.theme-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(29, 29, 31, 0.15);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast);
+}
+
+.theme-dialog-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.theme-dialog-card {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-radius: 20px;
+    padding: 28px 24px;
+    width: 90%;
+    max-width: 380px;
+    text-align: center;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transform: scale(0.9) translateY(10px);
+    opacity: 0;
+    transition: transform var(--transition-medium), opacity var(--transition-medium);
+}
+
+.theme-dialog-overlay.show .theme-dialog-card {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+.theme-dialog-icon {
+    font-size: 2.75rem;
+    line-height: 1;
+    margin-bottom: 12px;
+}
+
+.theme-dialog-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-text-base);
+    margin-bottom: 8px;
+}
+
+.theme-dialog-message {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    margin-bottom: 24px;
+}
+
+.theme-dialog-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+/* ==========================================
+   9. Custom Tags Input UI Components
+   ========================================== */
+.tags-input-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    min-height: 38px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-input);
+    background-color: var(--color-card-bg);
+    cursor: text;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.tags-input-container.focused {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.25rem var(--color-primary-focus-shadow);
+    outline: none;
+}
+
+.tags-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.tags-input-container .tag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 9999px;
+    background-color: var(--color-badge-primary-bg);
+    color: var(--color-badge-primary-text);
+    border: 1px solid var(--color-badge-primary-border);
+    animation: tagScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    user-select: none;
+}
+
+.tags-input-container .tag-badge .tag-remove-btn {
+    cursor: pointer;
+    font-size: 0.85rem;
+    opacity: 0.6;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+}
+
+.tags-input-container .tag-badge .tag-remove-btn:hover {
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+.tags-input-container .tag-field {
+    border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+    background: transparent;
+    color: var(--color-text-base);
+    font-size: 0.875rem;
+    min-width: 120px;
+    height: 26px;
+}
+
+@keyframes tagScaleIn {
+    0% {
+        transform: scale(0.7);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes tagScaleOut {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.7);
+        opacity: 0;
+    }
+}
+
+.tags-input-container .tag-badge.removing {
+    animation: tagScaleOut 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================
+   10. Select2 Apple Style Overrides
+   ========================================== */
+.select2-container--default .select2-selection--multiple {
+    border: 1px solid var(--color-border-input) !important;
+    border-radius: 8px !important;
+    min-height: 34px !important;
+    background-color: var(--color-card-bg) !important;
+    padding: 2px 4px !important;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast) !important;
+}
+
+.select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 0.25rem var(--color-primary-focus-shadow) !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: var(--color-badge-primary-bg) !important;
+    color: var(--color-badge-primary-text) !important;
+    border: 1px solid var(--color-badge-primary-border) !important;
+    border-radius: 9999px !important;
+    padding: 2px 8px !important;
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    margin-top: 4px !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: var(--color-badge-primary-text) !important;
+    border-right: none !important;
+    margin-right: 6px !important;
+    padding-right: 4px !important;
+    opacity: 0.6;
+    font-weight: bold;
+    display: inline-block !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    background-color: transparent !important;
+    opacity: 1;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field {
+    font-family: var(--font-sans);
+    color: var(--color-text-base);
+    margin-top: 5px !important;
+}
+
+.select2-dropdown {
+    border: 1px solid var(--color-border-input) !important;
+    border-radius: 8px !important;
+    box-shadow: var(--shadow-md) !important;
+    overflow: hidden;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: var(--color-primary) !important;
+    color: white !important;
+}
+
+.select2-container--default .select2-results__option {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+}
+
+/* ==========================================
+   Export Tags to Excel Modal
+   ========================================== */
+.export-fields-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .export-fields-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.export-field-card {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.export-field-card:hover {
+    border-color: #b0c4de;
+    background: #fafbfc;
+}
+
+.export-field-card.selected {
+    border-color: #c2dbff;
+    background: #fbfdff;
+}
+
+.export-field-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #212529;
+}
+
+.export-badge-default {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #6c757d;
+    background: #f1f3f5;
+    border-radius: 6px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+}
+
+.export-badge-extra {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #0071e3;
+    background: #edf5ff;
+    border-radius: 6px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+}
+
+.export-checkbox {
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.btn-export-pill {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #212529;
+    padding: 5px 14px;
+    transition: all 0.15s ease;
+}
+
+.btn-export-pill:hover {
+    background: #f8f9fa;
+    border-color: #ced4da;
+    color: #212529;
+}
+
+.btn-export-pill-primary {
+    background: #ffffff;
+    border: 1px solid #0071e3;
+    color: #0071e3;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 5px 14px;
+    transition: all 0.15s ease;
+}
+
+.btn-export-pill-primary:hover {
+    background: #edf5ff;
+    color: #0071e3;
+}

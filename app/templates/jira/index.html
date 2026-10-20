@@ -1,0 +1,101 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Jira Tracking History | Martech TMS{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 mb-4 border-bottom gap-3">
+    <div>
+        <h2 class="fw-bold mb-1" style="letter-spacing: -0.5px;">Jira Ticket Tracking</h2>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">
+            Log and synchronize tag implementations and date extension requests with Jira tickets.
+        </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{{ url_for('jira.export') }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </a>
+        <a href="{{ url_for('jira.add_entry') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i> Add Jira Entry
+        </a>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="p-3 bg-light rounded-4 border mb-4 shadow-sm">
+    <form method="GET" action="{{ url_for('jira.index') }}" class="row g-2 align-items-end">
+        <div class="col-12 col-md-9">
+            <input type="text" name="keyword" value="{{ keyword }}" class="form-control form-control-sm" placeholder="Search ticket ID or comments...">
+        </div>
+        <div class="col-12 col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="bi bi-search me-1"></i> Search</button>
+            <a href="{{ url_for('jira.index') }}" class="btn btn-light btn-sm border">Reset</a>
+        </div>
+    </form>
+</div>
+
+<!-- Table -->
+<div class="table-responsive rounded-3 border mb-3">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th style="width: 60px;">ID</th>
+                <th>Ticket ID</th>
+                <th>Type</th>
+                <th>Property</th>
+                <th>Subsidiary</th>
+                <th>Details / Comments</th>
+                <th>Logged At</th>
+                <th style="width: 90px;" class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in entries %}
+            <tr>
+                <td class="font-monospace text-muted">{{ e.id }}</td>
+                <td>
+                    <a href="https://jira.secext.samsung.net/browse/{{ e.ticket_id }}" target="_blank" class="badge bg-light text-primary border text-decoration-none">
+                        {{ e.ticket_id }} <i class="bi bi-box-arrow-up-right" style="font-size: 0.65rem;"></i>
+                    </a>
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ e.type or 'Standard' }}</span></td>
+                <td class="small">{{ properties.get(e.property_id) ~ name if properties.get(e.property_id) else '-' }}</td>
+                <td class="small">{{ subsidiaries.get(e.subsidiary_id) ~ name if subsidiaries.get(e.subsidiary_id) else '-' }}</td>
+                <td class="small text-muted text-truncate" style="max-width: 300px;">{{ e.comments or '-' }}</td>
+                <td class="small text-muted">{{ e.created_at|format_datetime }}</td>
+                <td class="text-end">
+                    <a href="{{ url_for('jira.update_tags', id=e.id) }}" class="btn btn-sm btn-light border p-1 px-2" title="Link Tags">
+                        <i class="bi bi-tags"></i>
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" class="text-center py-5 text-muted">No Jira records found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<nav class="d-flex justify-content-between align-items-center mt-3">
+    <span class="text-muted small">Showing page {{ pagination.page }} of {{ pagination.pages }}</span>
+    <ul class="pagination pagination-sm mb-0">
+        {% if pagination.has_prev %}
+        <li class="page-item"><a class="page-link" href="{{ url_for('jira.index', page=pagination.prev_num, keyword=keyword) }}">Previous</a></li>
+        {% endif %}
+        {% for p in pagination.iter_pages(left_edge=2, right_edge=2) %}
+            {% if p %}
+            <li class="page-item {{ 'active' if p == pagination.page else '' }}"><a class="page-link" href="{{ url_for('jira.index', page=p, keyword=keyword) }}">{{ p }}</a></li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+            {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <li class="page-item"><a class="page-link" href="{{ url_for('jira.index', page=pagination.next_num, keyword=keyword) }}">Next</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

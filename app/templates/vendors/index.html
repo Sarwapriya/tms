@@ -1,0 +1,70 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Vendors &amp; Partners | Martech TMS{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 mb-4 border-bottom gap-3">
+    <div>
+        <h2 class="fw-bold mb-1" style="letter-spacing: -0.5px;">Vendors &amp; Technology Partners</h2>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">
+            Third-party media partners, analytics providers, and pixel vendors.
+        </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{{ url_for('vendors.export') }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </a>
+        <a href="{{ url_for('vendors.create') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i> Add Vendor
+        </a>
+    </div>
+</div>
+
+<div class="table-responsive rounded-3 border">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th style="width: 60px;">ID</th>
+                <th>Vendor Name</th>
+                <th>About / Purpose</th>
+                <th>Governed Tags</th>
+                <th style="width: 100px;" class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in vendors %}
+            <tr>
+                <td class="font-monospace text-muted">{{ v.id }}</td>
+                <td>
+                    <a href="{{ url_for('vendors.view', id=v.id) }}" class="fw-semibold text-dark text-decoration-none">
+                        {{ v.name }}
+                    </a>
+                </td>
+                <td class="small text-muted text-truncate" style="max-width: 350px;">
+                    {{ v.about or v.tag_purpose or '-' }}
+                </td>
+                <td>
+                    <span class="badge bg-light text-primary border">
+                        {{ counts.get(v.id, 0) }} active tags
+                    </span>
+                </td>
+                <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                        <a href="{{ url_for('vendors.view', id=v.id) }}" class="btn btn-light border p-1 px-2" title="View details">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ url_for('vendors.update', id=v.id) }}" class="btn btn-light border p-1 px-2" title="Edit vendor">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center py-5 text-muted">No vendors found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

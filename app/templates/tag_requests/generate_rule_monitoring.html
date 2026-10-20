@@ -1,0 +1,968 @@
+{% extends 'layouts/default.html' %}
+
+{% block title %}
+Generate Rule Monitoring File
+{% endblock %}
+
+{% block content %}
+<style>
+/* Perfect alignment & styling for Select2 inputs */
+.rule-config-card .select2-container {
+    width: 100% !important;
+}
+
+.rule-config-card .select2-container--default .select2-selection--single {
+    height: 38px !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--color-border-input) !important;
+    padding: 5px 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    background-color: #fff !important;
+    box-shadow: none !important;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.rule-config-card .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 26px !important;
+    padding-left: 0 !important;
+    padding-right: 20px !important;
+    color: var(--color-text-base) !important;
+    font-size: 0.9rem !important;
+}
+
+.rule-config-card .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px !important;
+    top: 1px !important;
+    right: 8px !important;
+}
+
+.rule-config-card .select2-container--default .select2-selection--multiple {
+    min-height: 38px !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--color-border-input) !important;
+    padding: 2px 8px !important;
+    background-color: #fff !important;
+    font-size: 0.9rem !important;
+    box-shadow: none !important;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.rule-config-card .select2-container--default.select2-container--focus .select2-selection--multiple,
+.rule-config-card .select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 3px var(--color-primary-focus-shadow) !important;
+}
+
+.rule-config-card .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: var(--color-secondary-bg) !important;
+    border: 1px solid var(--color-border-subtle) !important;
+    border-radius: 4px !important;
+    padding: 2px 8px !important;
+    font-size: 0.8rem !important;
+    margin-top: 4px !important;
+}
+
+.badge-epp-aem {
+    background-color: #6f42c1 !important;
+    color: #fff !important;
+}
+
+.badge-epp-shop {
+    background-color: #d63384 !important;
+    color: #fff !important;
+}
+
+.clear-box-btn {
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border-input);
+    background-color: transparent;
+    transition: all 0.18s ease;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 6px;
+    height: 26px;
+    padding: 0 8px;
+    cursor: pointer;
+}
+
+.clear-box-btn:hover {
+    color: #c62828 !important;
+    background-color: #ffebee !important;
+    border-color: #ffcdd2 !important;
+    transform: translateY(-1px);
+}
+
+.clear-box-btn:active {
+    transform: translateY(0);
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-8px); }
+    60% { transform: translateY(-4px); }
+}
+</style>
+
+<div class="container-fluid px-0">
+    <!-- Page Header -->
+    <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+        <a href="{{ site_url('tag-requests') }}" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; padding: 0;" title="Back to Requests">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </a>
+        <div>
+            <h2 class="mb-0 fw-bold">Generate Rule Monitoring File</h2>
+            <div class="text-secondary small mb-0 fw-semibold d-flex align-items-center gap-2">
+                <span>Select a property to dynamically generate a monitoring file via automated tag simulation or manual log pasting.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Selection Card: Property & Tags -->
+    <div class="apple-card mb-4 rule-config-card">
+        <h5 class="mb-3 text-primary d-flex align-items-center gap-2 fw-bold">
+            <i class="bi bi-sliders2"></i>
+            <span>Property &amp; Tags Configuration</span>
+        </h5>
+
+        <div class="row g-4 align-items-start">
+            <!-- Property Selector Column -->
+            <div class="col-lg-6">
+                <div class="d-flex align-items-center justify-content-between mb-1" style="min-height: 24px;">
+                    <label for="property_select" class="form-label-xs fw-semibold text-secondary mb-0">
+                        Target Property <span class="text-danger">*</span>
+                    </label>
+                    <span id="prop_type_badge" class="badge" style="display: none; font-size: 0.75rem;"></span>
+                </div>
+                <select id="property_select" class="form-select searchable-select" style="width: 100%;">
+                    <option value="">-- Select a Property --</option>
+                    {% for prop in properties %}
+                        {% set isShop = (prop.is_shop == 1) %}
+                        {% set isEpp = (prop.is_epp == 1) %}
+                        {% if isEpp %}
+                            {% set typeLabel = 'EPP (Shop)' if isShop else 'EPP (AEM)' %}
+                        {% else %}
+                            {% set typeLabel = 'Shop' if isShop else 'AEM' %}
+                        {% endif %}
+                        <option value="{{ prop.id }}"
+                            data-is-shop="{{ '1' if isShop else '0' }}"
+                            data-is-epp="{{ '1' if isEpp else '0' }}"
+                            data-type-label="{{ typeLabel }}"
+                            data-website="{{ prop.website or '' }}"
+                            data-name="{{ prop.name }}">
+                            {{ prop.name }} [{{ typeLabel }}]
+                        </option>
+                    {% endfor %}
+                </select>
+                <small class="form-text text-muted d-block mt-1" style="font-size: 0.75rem; min-height: 18px;">
+                    Select a property to adapt the rule generation interface.
+                </small>
+            </div>
+
+            <!-- Associated Tags Selector Column -->
+            <div class="col-lg-6">
+                <div class="d-flex align-items-center justify-content-between mb-1" style="min-height: 24px;">
+                    <label for="tags_select" class="form-label-xs fw-semibold text-secondary mb-0">
+                        Associated Tag(s) <span class="text-muted fw-normal">(Optional)</span>
+                    </label>
+                    <span id="tags_loading" class="text-muted small" style="display: none;">
+                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>Loading tags...
+                    </span>
+                </div>
+                <select id="tags_select" class="form-select tags-select" multiple style="width: 100%;">
+                </select>
+                <small class="form-text text-muted d-block mt-1" style="font-size: 0.75rem; min-height: 18px;">
+                    Optionally pick tags to include in the header row (B2+) of the generated report.
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Placeholder Section (When no property selected) -->
+    <div id="placeholderSection" class="apple-card text-center py-5 my-3">
+        <div class="my-4">
+            <i class="bi bi-arrow-up-circle fs-1 text-primary d-inline-block mb-3" style="animation: bounce 2s infinite;"></i>
+            <h5 class="fw-bold text-dark mb-2">Please Select a Property Above</h5>
+            <p class="text-secondary small mb-0 mx-auto" style="max-width: 540px;">
+                The monitoring view will automatically change below depending on the selected property:
+            </p>
+            <div class="d-flex justify-content-center flex-wrap gap-2 mt-3">
+                <span class="badge bg-secondary-subtle text-secondary px-3 py-2 border"><i class="bi bi-shop me-1"></i> Shop &rarr; 3 Log Boxes (Cart, Checkout, Order)</span>
+                <span class="badge bg-secondary-subtle text-secondary px-3 py-2 border" style="border-left: 3px solid #6f42c1 !important;"><i class="bi bi-file-earmark-code me-1"></i> EPP (AEM) &rarr; 3 Log Boxes (Home, {{ systemSettings.excel_title_c3 or 'URL 2' }}, {{ systemSettings.excel_title_d3 or 'URL 3' }})</span>
+                <span class="badge bg-secondary-subtle text-secondary px-3 py-2 border"><i class="bi bi-play-circle me-1"></i> Standard / AEM &rarr; Automated Tag Simulation</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- THREE LOG BOXES VIEW (Shop, EPP Shop, EPP AEM) -->
+    <div id="shopEppSection" style="display: none;">
+        <div id="threeBoxesAlert" class="alert alert-info d-flex align-items-center gap-2 mb-4 py-2.5 px-3" style="border-radius: 10px;">
+            <i id="threeBoxesAlertIcon" class="bi bi-info-circle-fill fs-5 text-info"></i>
+            <div id="threeBoxesAlertText">
+                <strong><span id="shopEppModeBadge">Shop</span> Property Mode:</strong>
+                Paste the console logs below. Rule names enclosed in double quotes will be extracted automatically.
+            </div>
+        </div>
+
+        <form action="{{ site_url('tag-requests/generate-shop-excel') }}" method="post" id="shopManualForm">
+            {{ csrf_field() }}
+            <input type="hidden" name="property_id" id="shop_property_id" value="">
+            <div id="shop_tags_container"></div>
+
+            <div class="row g-4 mb-4">
+                <!-- Box 1 -->
+                <div class="col-lg-4">
+                    <div class="apple-card h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0 text-primary d-flex align-items-center gap-2 fw-bold" id="box1Header">
+                                <i class="bi bi-cart" id="box1Icon"></i>
+                                <span id="box1Title">Cart Logs</span>
+                            </h5>
+                            <button type="button" class="clear-box-btn d-inline-flex align-items-center gap-1" data-target="shop_cart_logs" title="Clear logs in this box">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </button>
+                        </div>
+                        <p class="text-secondary small mb-3" id="box1Desc">Paste the console logs for the Cart page below. The system extracts rule names enclosed in quotes.</p>
+                        <textarea class="form-control font-monospace" name="cart_logs" id="shop_cart_logs" rows="15" placeholder='watchConsoleLogs.8258a5d6.js:1 🚀 Rule "HQ-GA-CM-gTag Load" fired.'></textarea>
+                    </div>
+                </div>
+
+                <!-- Box 2 -->
+                <div class="col-lg-4">
+                    <div class="apple-card h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0 text-primary d-flex align-items-center gap-2 fw-bold" id="box2Header">
+                                <i class="bi bi-credit-card" id="box2Icon"></i>
+                                <span id="box2Title">Checkout Logs</span>
+                            </h5>
+                            <button type="button" class="clear-box-btn d-inline-flex align-items-center gap-1" data-target="shop_checkout_logs" title="Clear logs in this box">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </button>
+                        </div>
+                        <p class="text-secondary small mb-3" id="box2Desc">Paste the console logs for the Checkout page below. The system extracts rule names enclosed in quotes.</p>
+                        <textarea class="form-control font-monospace" name="checkout_logs" id="shop_checkout_logs" rows="15" placeholder='watchConsoleLogs.8258a5d6.js:1 🚀 Rule "HQ-GA-CM-gTag Load" fired.'></textarea>
+                    </div>
+                </div>
+
+                <!-- Box 3 -->
+                <div class="col-lg-4">
+                    <div class="apple-card h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0 text-primary d-flex align-items-center gap-2 fw-bold" id="box3Header">
+                                <i class="bi bi-bag-check" id="box3Icon"></i>
+                                <span id="box3Title">Order Confirmation Logs</span>
+                            </h5>
+                            <button type="button" class="clear-box-btn d-inline-flex align-items-center gap-1" data-target="shop_order_logs" title="Clear logs in this box">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </button>
+                        </div>
+                        <p class="text-secondary small mb-3" id="box3Desc">Paste the console logs for the Order Confirmation page below. The system extracts rule names enclosed in quotes.</p>
+                        <textarea class="form-control font-monospace" name="order_logs" id="shop_order_logs" rows="15" placeholder='watchConsoleLogs.8258a5d6.js:1 🚀 Rule "HQ-GA-CM-gTag Load" fired.'></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end mb-4">
+                <button type="submit" class="apple-btn-primary d-flex align-items-center gap-2 py-2 px-4 shadow-sm" id="btnGenerateShopExcel">
+                    <i class="bi bi-file-earmark-excel-fill fs-5"></i> Generate Excel Report
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- STANDARD / AEM VIEW (Automated Tag Capture) -->
+    <div id="aemCaptureSection" style="display: none;">
+        <div class="alert alert-primary d-flex align-items-center gap-2 mb-4 py-2.5 px-3" style="border-radius: 10px;">
+            <i class="bi bi-lightning-charge-fill fs-5 text-primary"></i>
+            <div>
+                <strong>Standard Property Mode:</strong>
+                Target URLs are auto-populated from the property's website. Click <strong>Capture All</strong> to simulate Adobe Launch tag rules and generate the report.
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Configuration Form -->
+            <div class="col-lg-12">
+                <div class="apple-card mb-4">
+                    <h5 class="mb-4 text-primary d-flex align-items-center gap-2 fw-bold">
+                        <i class="bi bi-gear-fill"></i>
+                        <span>Capture Configuration</span>
+                    </h5>
+                    
+                    <form id="captureForm">
+                        <div class="row g-3 align-items-end mb-3">
+                            <div class="col-md-4">
+                                <label for="target_url_1" class="form-label-xs fw-semibold text-secondary mb-1 d-block">Target URL (Home)</label>
+                                <input type="url" class="form-control form-control-sm" id="target_url_1" name="target_url_1" placeholder="https://www.example.com" required>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="target_url_2" class="form-label-xs fw-semibold text-secondary mb-1 d-block">Target URL ({{ systemSettings.excel_title_c3 or 'URL 2' }})</label>
+                                <input type="url" class="form-control form-control-sm" id="target_url_2" name="target_url_2" placeholder="https://www.example.com{{ systemSettings.flagship_page or '' }}">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="target_url_3" class="form-label-xs fw-semibold text-secondary mb-1 d-block">Target URL ({{ systemSettings.excel_title_d3 or 'URL 3' }})</label>
+                                <input type="url" class="form-control form-control-sm" id="target_url_3" name="target_url_3" placeholder="https://www.example.com{{ systemSettings.flagship_buy_page or '' }}">
+                            </div>
+                        </div>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-10">
+                                <label for="launch_script_url" class="form-label-xs fw-semibold text-secondary mb-1 d-block">Launch Script URL (Optional)</label>
+                                <input type="url" class="form-control form-control-sm" id="launch_script_url" name="launch_script_url" placeholder="https://assets.adobedtm.com/.../launch-ENV.min.js">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="apple-btn-primary btn-sm w-100" id="captureBtn">
+                                    <i class="bi bi-play-fill me-1"></i> Capture All
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="col-lg-12" id="resultsSection" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-clipboard2-check text-success"></i> Simulation Results
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-success fw-semibold shadow-sm d-flex align-items-center gap-1.5" id="downloadExcelBtn">
+                        <i class="bi bi-file-earmark-excel-fill me-1"></i> Download Rule Monitoring File
+                    </button>
+                </div>
+
+                <ul class="nav nav-tabs mb-4" id="captureTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-semibold" id="rules-tab" data-bs-toggle="tab" data-bs-target="#rules" type="button" role="tab" aria-controls="rules" aria-selected="true">
+                            <i class="bi bi-lightning-fill me-1 text-warning"></i> Fired Rules <span class="badge bg-secondary ms-1" id="rulesCountBadge">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold" id="conditions-tab" data-bs-toggle="tab" data-bs-target="#conditions" type="button" role="tab" aria-controls="conditions" aria-selected="false">
+                            <i class="bi bi-x-circle-fill me-1 text-danger"></i> Conditions Not Met <span class="badge bg-secondary ms-1" id="conditionsCountBadge">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold" id="failed-tab" data-bs-toggle="tab" data-bs-target="#failed" type="button" role="tab" aria-controls="failed" aria-selected="false">
+                            <i class="bi bi-exclamation-octagon-fill me-1 text-danger"></i> Failed to Execute <span class="badge bg-secondary ms-1" id="failedCountBadge">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" type="button" role="tab" aria-controls="network" aria-selected="false">
+                            <i class="bi bi-hdd-network-fill me-1 text-info"></i> Network Tags <span class="badge bg-secondary ms-1" id="networkCountBadge">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold" id="debug-tab" data-bs-toggle="tab" data-bs-target="#debug" type="button" role="tab" aria-controls="debug" aria-selected="false">
+                            <i class="bi bi-bug-fill me-1 text-secondary"></i> Debug Logs <span class="badge bg-secondary ms-1" id="debugCountBadge">0</span>
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="captureTabsContent">
+                    <div class="tab-pane fade show active" id="rules" role="tabpanel" aria-labelledby="rules-tab">
+                        <div class="apple-card">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 apple-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="form-label-sm fw-semibold" style="width: 50px;">#</th>
+                                            <th class="form-label-sm fw-semibold">Rule Message</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="rulesTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="conditions" role="tabpanel" aria-labelledby="conditions-tab">
+                        <div class="apple-card">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 apple-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="form-label-sm fw-semibold" style="width: 50px;">#</th>
+                                            <th class="form-label-sm fw-semibold">Condition Message</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="conditionsTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="failed" role="tabpanel" aria-labelledby="failed-tab">
+                        <div class="apple-card">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 apple-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="form-label-sm fw-semibold" style="width: 50px;">#</th>
+                                            <th class="form-label-sm fw-semibold">Failure Message</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="failedTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="network" role="tabpanel" aria-labelledby="network-tab">
+                        <div class="apple-card">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 apple-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="form-label-sm fw-semibold" style="width: 50px;">#</th>
+                                            <th class="form-label-sm fw-semibold">Network Request URL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="networkTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="debug" role="tabpanel" aria-labelledby="debug-tab">
+                        <div class="apple-card">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 apple-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="form-label-sm fw-semibold" style="width: 50px;">#</th>
+                                            <th class="form-label-sm fw-semibold">Log Entry</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="debugTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>        
+
+            <div class="col-lg-12" id="errorSection" style="display: none;">
+                <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    <div id="errorMessage">An error occurred while capturing tags.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const propertySelect = document.getElementById('property_select');
+    const tagsSelect = document.getElementById('tags_select');
+    const tagsLoading = document.getElementById('tags_loading');
+    const propTypeBadge = document.getElementById('prop_type_badge');
+    const placeholderSection = document.getElementById('placeholderSection');
+    const shopEppSection = document.getElementById('shopEppSection');
+    const aemCaptureSection = document.getElementById('aemCaptureSection');
+    const shopPropertyId = document.getElementById('shop_property_id');
+    const shopTagsContainer = document.getElementById('shop_tags_container');
+    
+    // 3 Boxes Elements
+    const threeBoxesAlert = document.getElementById('threeBoxesAlert');
+    const threeBoxesAlertIcon = document.getElementById('threeBoxesAlertIcon');
+    const threeBoxesAlertText = document.getElementById('threeBoxesAlertText');
+    const box1Icon = document.getElementById('box1Icon');
+    const box1Title = document.getElementById('box1Title');
+    const box1Desc = document.getElementById('box1Desc');
+    const box2Icon = document.getElementById('box2Icon');
+    const box2Title = document.getElementById('box2Title');
+    const box2Desc = document.getElementById('box2Desc');
+    const box3Icon = document.getElementById('box3Icon');
+    const box3Title = document.getElementById('box3Title');
+    const box3Desc = document.getElementById('box3Desc');
+
+    // AEM Target URLs
+    const targetUrl1 = document.getElementById('target_url_1');
+    const targetUrl2 = document.getElementById('target_url_2');
+    const targetUrl3 = document.getElementById('target_url_3');
+    const flagshipPage = {{ (systemSettings.flagship_page or '') | tojson }};
+    const flagshipBuyPage = {{ (systemSettings.flagship_buy_page or '') | tojson }};
+    const titleC3 = {{ (systemSettings.excel_title_c3 or 'URL 2') | tojson }};
+    const titleD3 = {{ (systemSettings.excel_title_d3 or 'URL 3') | tojson }};
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'};
+        return text.toString().replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Initialize Select2 if present
+    if (typeof $ !== 'undefined' && $.fn.select2) {
+        $('#property_select').select2({
+            placeholder: '-- Select a Property --',
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#tags_select').select2({
+            placeholder: 'Select existing tags or type custom tag...',
+            tags: true,
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#property_select').on('change', function() {
+            onPropertyChange();
+        });
+    } else {
+        propertySelect.addEventListener('change', onPropertyChange);
+    }
+
+    function calculateUrls(base) {
+        if (!base) {
+            targetUrl2.value = '';
+            targetUrl3.value = '';
+            return;
+        }
+        let cleanBase = base.trim().replace(/\/$/, '');
+        if (flagshipPage) {
+            targetUrl2.value = cleanBase + '/' + flagshipPage.replace(/^\//, '');
+        }
+        if (flagshipBuyPage) {
+            targetUrl3.value = cleanBase + '/' + flagshipBuyPage.replace(/^\//, '');
+        }
+    }
+
+    if (targetUrl1) {
+        targetUrl1.addEventListener('input', function() {
+            calculateUrls(targetUrl1.value);
+        });
+    }
+
+    async function loadPropertyTags(propertyId) {
+        if (!tagsSelect) return;
+        tagsLoading.style.display = 'inline-block';
+        
+        try {
+            const resp = await fetch(`{{ site_url('tag-requests/property-tags/') }}${propertyId}`);
+            const data = await resp.json();
+            
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('#tags_select').empty();
+                if (data.success && Array.isArray(data.tags)) {
+                    data.tags.forEach(tag => {
+                        const newOption = new Option(tag.name, tag.id, false, false);
+                        $('#tags_select').append(newOption);
+                    });
+                }
+                $('#tags_select').trigger('change');
+            } else {
+                tagsSelect.innerHTML = '';
+                if (data.success && Array.isArray(data.tags)) {
+                    data.tags.forEach(tag => {
+                        const opt = document.createElement('option');
+                        opt.value = tag.id;
+                        opt.textContent = tag.name;
+                        tagsSelect.appendChild(opt);
+                    });
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load property tags:', e);
+        } finally {
+            tagsLoading.style.display = 'none';
+        }
+    }
+
+    function configureThreeBoxes(mode) {
+        if (mode === 'epp_aem') {
+            threeBoxesAlert.className = 'alert alert-light border d-flex align-items-center gap-2 mb-4 py-2.5 px-3';
+            threeBoxesAlert.style.borderLeft = '4px solid #6f42c1';
+            threeBoxesAlertIcon.className = 'bi bi-info-circle-fill fs-5';
+            threeBoxesAlertIcon.style.color = '#6f42c1';
+            threeBoxesAlertText.innerHTML = `<strong>EPP (AEM) Property Mode:</strong> Paste the console logs for <strong>Home</strong>, <strong>${escapeHtml(titleC3)}</strong>, and <strong>${escapeHtml(titleD3)}</strong> below. The system extracts rule names enclosed in quotes and generates the AEM rule monitoring file.`;
+
+            box1Icon.className = 'bi bi-house-door';
+            box1Title.textContent = 'Home Logs';
+            box1Desc.textContent = 'Paste the console logs for the Home page below. The system extracts rule names enclosed in quotes.';
+
+            box2Icon.className = 'bi bi-file-earmark-code';
+            box2Title.textContent = `${titleC3} Logs`;
+            box2Desc.textContent = `Paste the console logs for the ${titleC3} page below. The system extracts rule names enclosed in quotes.`;
+
+            box3Icon.className = 'bi bi-file-earmark-code';
+            box3Title.textContent = `${titleD3} Logs`;
+            box3Desc.textContent = `Paste the console logs for the ${titleD3} page below. The system extracts rule names enclosed in quotes.';
+        } else {
+            const isEppShop = (mode === 'epp_shop');
+            threeBoxesAlert.className = 'alert alert-info d-flex align-items-center gap-2 mb-4 py-2.5 px-3';
+            threeBoxesAlert.style.borderLeft = '';
+            threeBoxesAlertIcon.className = 'bi bi-info-circle-fill fs-5 text-info';
+            threeBoxesAlertIcon.style.color = '';
+            threeBoxesAlertText.innerHTML = `<strong>${isEppShop ? 'EPP (Shop)' : 'Shop'} Property Mode:</strong> Paste the console logs for <strong>Cart</strong>, <strong>Checkout</strong>, and <strong>Order Confirmation</strong> pages below. The system extracts rule names enclosed in quotes and generates the Shop rule monitoring file.`;
+
+            box1Icon.className = 'bi bi-cart';
+            box1Title.textContent = 'Cart Logs';
+            box1Desc.textContent = 'Paste the console logs for the Cart page below. The system extracts rule names enclosed in quotes.';
+
+            box2Icon.className = 'bi bi-credit-card';
+            box2Title.textContent = 'Checkout Logs';
+            box2Desc.textContent = 'Paste the console logs for the Checkout page below. The system extracts rule names enclosed in quotes.';
+
+            box3Icon.className = 'bi bi-bag-check';
+            box3Title.textContent = 'Order Confirmation Logs';
+            box3Desc.textContent = 'Paste the console logs for the Order Confirmation page below. The system extracts rule names enclosed in quotes.';
+        }
+    }
+
+    function clearAllFields() {
+        if (typeof $ !== 'undefined' && $.fn.select2) {
+            $('#tags_select').empty().val(null).trigger('change');
+        } else if (tagsSelect) {
+            tagsSelect.innerHTML = '';
+            tagsSelect.value = '';
+        }
+
+        const cartLogs = document.getElementById('shop_cart_logs');
+        if (cartLogs) cartLogs.value = '';
+        const checkoutLogs = document.getElementById('shop_checkout_logs');
+        if (checkoutLogs) checkoutLogs.value = '';
+        const orderLogs = document.getElementById('shop_order_logs');
+        if (orderLogs) orderLogs.value = '';
+        if (shopPropertyId) shopPropertyId.value = '';
+        if (shopTagsContainer) shopTagsContainer.innerHTML = '';
+
+        if (targetUrl1) targetUrl1.value = '';
+        if (targetUrl2) targetUrl2.value = '';
+        if (targetUrl3) targetUrl3.value = '';
+        const launchScript = document.getElementById('launch_script_url');
+        if (launchScript) launchScript.value = '';
+
+        const resultsSection = document.getElementById('resultsSection');
+        if (resultsSection) resultsSection.style.display = 'none';
+        const errorSection = document.getElementById('errorSection');
+        if (errorSection) errorSection.style.display = 'none';
+        const downloadExcelBtn = document.getElementById('downloadExcelBtn');
+        if (downloadExcelBtn) downloadExcelBtn.style.display = 'none';
+        window._capturedExcelData = null;
+
+        const rulesTableBody = document.getElementById('rulesTableBody');
+        if (rulesTableBody) rulesTableBody.innerHTML = '';
+        const conditionsTableBody = document.getElementById('conditionsTableBody');
+        if (conditionsTableBody) conditionsTableBody.innerHTML = '';
+        const failedTableBody = document.getElementById('failedTableBody');
+        if (failedTableBody) failedTableBody.innerHTML = '';
+        const networkTableBody = document.getElementById('networkTableBody');
+        if (networkTableBody) networkTableBody.innerHTML = '';
+        const debugTableBody = document.getElementById('debugTableBody');
+        if (debugTableBody) debugTableBody.innerHTML = '';
+
+        const rulesCountBadge = document.getElementById('rulesCountBadge');
+        if (rulesCountBadge) rulesCountBadge.textContent = '0';
+        const conditionsCountBadge = document.getElementById('conditionsCountBadge');
+        if (conditionsCountBadge) conditionsCountBadge.textContent = '0';
+        const failedCountBadge = document.getElementById('failedCountBadge');
+        if (failedCountBadge) failedCountBadge.textContent = '0';
+        const networkCountBadge = document.getElementById('networkCountBadge');
+        if (networkCountBadge) networkCountBadge.textContent = '0';
+        const debugCountBadge = document.getElementById('debugCountBadge');
+        if (debugCountBadge) debugCountBadge.textContent = '0';
+    }
+
+    function onPropertyChange() {
+        const selectedValue = propertySelect.value;
+        const selectedOption = propertySelect.options[propertySelect.selectedIndex];
+
+        clearAllFields();
+
+        if (!selectedValue) {
+            propTypeBadge.style.display = 'none';
+            placeholderSection.style.display = 'block';
+            shopEppSection.style.display = 'none';
+            aemCaptureSection.style.display = 'none';
+            return;
+        }
+
+        const isShop = selectedOption.getAttribute('data-is-shop') === '1';
+        const isEpp = selectedOption.getAttribute('data-is-epp') === '1';
+        const website = selectedOption.getAttribute('data-website') || '';
+
+        propTypeBadge.style.display = 'inline-block';
+        if (isEpp) {
+            if (isShop) {
+                propTypeBadge.className = 'badge badge-epp-shop';
+                propTypeBadge.textContent = 'EPP (Shop)';
+            } else {
+                propTypeBadge.className = 'badge badge-epp-aem';
+                propTypeBadge.textContent = 'EPP (AEM)';
+            }
+        } else if (isShop) {
+            propTypeBadge.className = 'badge text-bg-warning';
+            propTypeBadge.textContent = 'Shop';
+        } else {
+            propTypeBadge.className = 'badge text-bg-primary';
+            propTypeBadge.textContent = 'AEM / Standard';
+        }
+
+        placeholderSection.style.display = 'none';
+        loadPropertyTags(selectedValue);
+
+        if (isEpp) {
+            shopEppSection.style.display = 'block';
+            aemCaptureSection.style.display = 'none';
+            configureThreeBoxes(isShop ? 'epp_shop' : 'epp_aem');
+            shopPropertyId.value = selectedValue;
+        } else if (isShop) {
+            shopEppSection.style.display = 'block';
+            aemCaptureSection.style.display = 'none';
+            configureThreeBoxes('shop');
+            shopPropertyId.value = selectedValue;
+        } else {
+            shopEppSection.style.display = 'none';
+            aemCaptureSection.style.display = 'block';
+            targetUrl1.value = website;
+            calculateUrls(website);
+        }
+    }
+
+    document.querySelectorAll('.clear-box-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const textarea = document.getElementById(targetId);
+            if (textarea) {
+                textarea.value = '';
+                textarea.focus();
+            }
+        });
+    });
+
+    let isSubmittingShop = false;
+    document.getElementById('shopManualForm').addEventListener('submit', function(e) {
+        const cartVal = document.getElementById('shop_cart_logs').value.trim();
+        const checkoutVal = document.getElementById('shop_checkout_logs').value.trim();
+        const orderVal = document.getElementById('shop_order_logs').value.trim();
+
+        if (!cartVal && !checkoutVal && !orderVal) {
+            e.preventDefault();
+            alert('Please paste logs into at least one of the three boxes.');
+            return false;
+        }
+
+        shopTagsContainer.innerHTML = '';
+        let selectedTags = [];
+        if (typeof $ !== 'undefined' && $.fn.select2) {
+            selectedTags = $('#tags_select').val() || [];
+        } else {
+            selectedTags = Array.from(tagsSelect.selectedOptions).map(o => o.value);
+        }
+
+        selectedTags.forEach(tVal => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            if (/^\d+$/.test(tVal)) {
+                input.name = 'tag_ids[]';
+            } else {
+                input.name = 'custom_tags[]';
+            }
+            input.value = tVal;
+            shopTagsContainer.appendChild(input);
+        });
+
+        isSubmittingShop = true;
+        setTimeout(function() {
+            isSubmittingShop = false;
+        }, 3000);
+    });
+
+    // Handle Capture Form Execution
+    document.getElementById('captureForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const targetUrls = [
+            document.getElementById('target_url_1').value,
+            document.getElementById('target_url_2').value,
+            document.getElementById('target_url_3').value
+        ].filter(url => url && url.trim() !== '');
+
+        if (targetUrls.length === 0) return;
+
+        const launchScriptUrl = document.getElementById('launch_script_url').value;
+        const captureBtn = document.getElementById('captureBtn');
+        const resultsSection = document.getElementById('resultsSection');
+        const errorSection = document.getElementById('errorSection');
+        const downloadExcelBtn = document.getElementById('downloadExcelBtn');
+        
+        const rulesTableBody = document.getElementById('rulesTableBody');
+        const conditionsTableBody = document.getElementById('conditionsTableBody');
+        const failedTableBody = document.getElementById('failedTableBody');
+        const networkTableBody = document.getElementById('networkTableBody');
+        const debugTableBody = document.getElementById('debugTableBody');
+        
+        const rulesCountBadge = document.getElementById('rulesCountBadge');
+        const conditionsCountBadge = document.getElementById('conditionsCountBadge');
+        const failedCountBadge = document.getElementById('failedCountBadge');
+        const networkCountBadge = document.getElementById('networkCountBadge');
+        const debugCountBadge = document.getElementById('debugCountBadge');
+        
+        resultsSection.style.display = 'none';
+        errorSection.style.display = 'none';
+        downloadExcelBtn.style.display = 'none';
+        
+        rulesTableBody.innerHTML = '';
+        conditionsTableBody.innerHTML = '';
+        failedTableBody.innerHTML = '';
+        networkTableBody.innerHTML = '';
+        debugTableBody.innerHTML = '';
+        
+        captureBtn.disabled = true;
+        captureBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Capturing...';
+        
+        let allFiredRules = { url1: [], url2: [], url3: [] };
+        let capturedDataByUrl = [];
+
+        for (let i = 0; i < targetUrls.length; i++) {
+            const url = targetUrls[i];
+            captureBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Capturing URL ${i + 1} of ${targetUrls.length}...`;
+            
+            const formData = new URLSearchParams();
+            formData.append('target_url', url);
+            formData.append('launch_script_url', launchScriptUrl);
+            
+            try {
+                const response = await fetch('{{ site_url("tag-requests/capture") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData.toString()
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (i === 0) allFiredRules.url1 = data.rules_fired || [];
+                    if (i === 1) allFiredRules.url2 = data.rules_fired || [];
+                    if (i === 2) allFiredRules.url3 = data.rules_fired || [];
+                    
+                    capturedDataByUrl.push({
+                        urlLabel: `URL ${i+1}: ${url}`,
+                        rules: data.rules_fired || [],
+                        conditions: data.condition_not_met || [],
+                        failed: data.failed || [],
+                        networks: data.network_tags || [],
+                        debugs: data.debug_activity || []
+                    });
+                } else {
+                    errorSection.style.display = 'block';
+                    let errMsg = data.error || `Failed to capture tags for URL ${i+1}.`;
+                    document.getElementById('errorMessage').innerHTML = errMsg;
+                    captureBtn.disabled = false;
+                    captureBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Capture All';
+                    return;
+                }
+            } catch (error) {
+                errorSection.style.display = 'block';
+                document.getElementById('errorMessage').textContent = `Network error occurred during capture of URL ${i+1}.`;
+                captureBtn.disabled = false;
+                captureBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Capture All';
+                return;
+            }
+        }
+        
+        captureBtn.disabled = false;
+        captureBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Capture All';
+        
+        resultsSection.style.display = 'block';
+        downloadExcelBtn.style.display = 'inline-flex';
+        window._capturedExcelData = allFiredRules;
+        
+        let rulesCount = 0, conditionsCount = 0, failedCount = 0, networkCount = 0, debugCount = 0;
+        
+        function renderGroup(tbody, items, urlLabel, formatter) {
+            if (items.length > 0) {
+                tbody.innerHTML += `<tr><td colspan="2" class="bg-light fw-bold text-primary px-3 py-2 border-bottom-0"><i class="bi bi-link-45deg me-1"></i>${urlLabel}</td></tr>`;
+                items.forEach((item, idx) => {
+                    tbody.innerHTML += `<tr><td class="fw-medium text-secondary text-center border-end" style="width: 50px;">${idx + 1}</td><td>${formatter(item)}</td></tr>`;
+                });
+            }
+        }
+
+        capturedDataByUrl.forEach(group => {
+            rulesCount += group.rules.length;
+            conditionsCount += group.conditions.length;
+            failedCount += group.failed.length;
+            networkCount += group.networks.length;
+            debugCount += group.debugs.length;
+            
+            renderGroup(rulesTableBody, group.rules, group.urlLabel, msg => `<pre class="bg-light border p-2 rounded mb-0 text-dark" style="font-size: 0.85rem; max-height: 150px; overflow-y: auto;"><code>${escapeHtml(msg)}</code></pre>`);
+            renderGroup(conditionsTableBody, group.conditions, group.urlLabel, msg => `<pre class="bg-light border p-2 rounded mb-0 text-dark" style="font-size: 0.85rem; max-height: 150px; overflow-y: auto;"><code>${escapeHtml(msg)}</code></pre>`);
+            renderGroup(failedTableBody, group.failed, group.urlLabel, msg => `<pre class="bg-light border p-2 rounded mb-0 text-dark" style="font-size: 0.85rem; max-height: 150px; overflow-y: auto;"><code>${escapeHtml(msg)}</code></pre>`);
+            renderGroup(networkTableBody, group.networks, group.urlLabel, msg => `<pre class="bg-light border p-2 rounded mb-0 text-dark" style="font-size: 0.85rem; max-height: 150px; overflow-y: auto; white-space: pre-wrap;"><code>${escapeHtml(msg)}</code></pre>`);
+            renderGroup(debugTableBody, group.debugs, group.urlLabel, msg => `<span class="text-dark" style="font-size: 0.9rem;">${escapeHtml(msg)}</span>`);
+        });
+
+        if (rulesCount === 0) rulesTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-4">No rules were fired.</td></tr>';
+        if (conditionsCount === 0) conditionsTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-4">No conditions failed.</td></tr>';
+        if (failedCount === 0) failedTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-4">No rules failed to execute.</td></tr>';
+        if (networkCount === 0) networkTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-4">No network tags captured.</td></tr>';
+        if (debugCount === 0) debugTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-4">No debug logs available.</td></tr>';
+
+        rulesCountBadge.textContent = rulesCount;
+        conditionsCountBadge.textContent = conditionsCount;
+        failedCountBadge.textContent = failedCount;
+        networkCountBadge.textContent = networkCount;
+        debugCountBadge.textContent = debugCount;
+    });
+
+    // Handle Download Excel for Standard/AEM capture
+    document.getElementById('downloadExcelBtn').addEventListener('click', function() {
+        const data = window._capturedExcelData;
+        if (!data) return;
+        
+        const propertyId = propertySelect.value;
+        if (!propertyId) {
+            alert('Please select a property.');
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ site_url("tag-requests/generate-excel") }}';
+        form.target = '_blank';
+        
+        const propIdInput = document.createElement('input');
+        propIdInput.type = 'hidden';
+        propIdInput.name = 'property_id';
+        propIdInput.value = propertyId;
+        form.appendChild(propIdInput);
+
+        let selectedTags = [];
+        if (typeof $ !== 'undefined' && $.fn.select2) {
+            selectedTags = $('#tags_select').val() || [];
+        } else {
+            selectedTags = Array.from(tagsSelect.selectedOptions).map(o => o.value);
+        }
+
+        selectedTags.forEach(tVal => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            if (/^\d+$/.test(tVal)) {
+                input.name = 'tag_ids[]';
+            } else {
+                input.name = 'custom_tags[]';
+            }
+            input.value = tVal;
+            form.appendChild(input);
+        });
+        
+        const dataInput = document.createElement('input');
+        dataInput.type = 'hidden';
+        dataInput.name = 'rules_data';
+        dataInput.value = JSON.stringify(data);
+        form.appendChild(dataInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    });
+});
+</script>
+{% endblock %}
